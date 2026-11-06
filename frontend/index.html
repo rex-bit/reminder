@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#6750a4" />
+    <title>Reminder</title>
+    <script>
+      // Apply stored theme before first paint to avoid a flash.
+      try {
+        var m = localStorage.getItem('theme.mode');
+        var dark = m === 'dark' || ((!m || m === 'system') && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        document.documentElement.style.background = dark ? '#141218' : '#fef7ff';
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
