@@ -2,6 +2,21 @@
 
 Personal project: reminder management for admins, with scheduled delivery through the official WhatsApp Business Platform (Cloud API).
 
+
+## Preview
+
+> Design mockups with example data (the layout and colors are the real ones; the app itself needs the backend to run).
+
+![Demo](docs/screenshots/demo.gif)
+
+| Public class page (no login) | Admin dashboard | Create reminder |
+|---|---|---|
+| ![Public](docs/screenshots/public.png) | ![Dashboard](docs/screenshots/admin-dashboard.png) | ![Create](docs/screenshots/admin-create.png) |
+
+| Dark theme | Phone (public) | Phone (admin) |
+|---|---|---|
+| ![Dark](docs/screenshots/public-dark.png) | <img src="docs/screenshots/public-mobile.png" width="220"> | <img src="docs/screenshots/admin-mobile.png" width="220"> |
+
 ## Layout
 
 | Dir | Purpose | Status |
@@ -51,7 +66,7 @@ npm run typecheck        # not part of build; run it to catch type errors
 - **Status:** the code has been syntax-checked and the palette/date helpers run, but `npm install`, `tsc` and `vite build` have not been run yet. Pages call the endpoints in [`docs/API.md`](docs/API.md); only `/auth/*` and `/activity` exist in the backend today, the rest arrive in Phase 3, so those pages show an error state until then.
 
 ## Public class page
-Students open the site without logging in (`/#/`) to see today's schedule, uniform, homework, piket and announcements, and can turn on notifications. The Owner enables it in Settings (off by default). Admin login is at `/#/login`.
+Students open the site without logging in (`/#/`) to see today's schedule, uniform, homework, piket and announcements, and can turn on notifications. The Owner enables it in Settings (off by default). Admin login is only at `/#/login`; any other panel URL shows "no access" to visitors.
 
 ## Notifications instead of auto-posting (class groups)
 Because the official API cannot post into an existing group, the recommended setup is **Manual share + notifications**: at the scheduled time you get a push notification, tap it, and share the prefilled message to your group yourself. Setup: `npx web-push generate-vapid-keys`, put the keys in `backend/.env`, deploy the frontend over HTTPS, then Settings > Notifications > Enable. See `docs/WHATSAPP.md`.

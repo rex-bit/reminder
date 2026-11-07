@@ -54,3 +54,4 @@ Legend: ✅ run during development (see notes) · ☐ run it yourself after depl
 - ☐ Enable notifications as a visitor; schedule a manual-share reminder 2 minutes ahead: the page shows nothing yet. Press Mark as sent: only now the notification arrives and the reminder appears.
 - ☐ A device that is also an admin device gets one notification, not two.
 - ☐ An emergency announcement is pinned on top for 3 days.
+- ☐ Logged out, open `/#/admins` or `/#/reminders`: you see "Kamu tidak punya akses", not a login form. `/#/login` shows the form. Calling any panel API without a token returns 401.

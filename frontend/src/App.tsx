@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/Dashboard';
 import { DuePage } from './pages/Due';
 import { DeliveryLogsPage } from './pages/DeliveryLogs';
 import { LoginPage } from './pages/Login';
+import { NoAccessPage } from './pages/NoAccess';
 import { ProfilePage } from './pages/Profile';
 import { PublicHomePage } from './pages/PublicHome';
 import { RecipientsPage } from './pages/Recipients';
@@ -35,13 +36,15 @@ export function App() {
       </div>
     );
   }
-  // Visitors without an account see the read-only class page; every other URL asks for a login (deep links keep working after sign-in).
+  // Visitors without an account see the read-only class page. Panel URLs show "no access"; the sign-in form lives only at /login.
+  // (This only hides the form. Real protection is the server, which rejects every panel API call without a valid login.)
   if (!admin) {
     return (
       <Routes>
         <Route path="/" element={<PublicHomePage />} />
         <Route path="/home" element={<PublicHomePage />} />
-        <Route path="*" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<NoAccessPage />} />
       </Routes>
     );
   }

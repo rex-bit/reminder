@@ -185,9 +185,7 @@ export function PublicHomePage() {
         </div>
         {admin ? (
           <LinkButton to="/" variant="tonal" icon="dashboard">Dashboard</LinkButton>
-        ) : (
-          <LinkButton to="/login" variant="text" icon="lock">Admin</LinkButton>
-        )}
+        ) : null}
       </div>
 
       {feed.loading && !d && <LoadingList />}
