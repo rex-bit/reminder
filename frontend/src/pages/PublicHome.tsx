@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { errorMessage } from '../api/client';
 import { publicApi } from '../api/endpoints';
-import type { PublicReminder } from '../api/types';
+import { EMPTY_CONTENT, type PublicReminder, type ReminderContent } from '../api/types';
 import { useAuth } from '../auth/AuthProvider';
 import { longDate, todayIso } from '../lib/format';
 import { disablePublicPush, enablePublicPush, getPublicPushState, needsHomeScreenInstall, type PushState } from '../lib/push';
@@ -23,7 +23,7 @@ function Section({ icon, title, children }: { icon: string; title: string; child
 
 function ReminderCard({ r, highlight }: { r: PublicReminder; highlight?: boolean }) {
   // Older or partial rows may lack some keys; never crash the public page on them.
-  const c = { uniform: '', subjects: [], homework: [], piket: [], notes: '', announcements: '', ...r.content };
+  const c: ReminderContent = { ...EMPTY_CONTENT, ...r.content };
   const hasContent = Boolean(c.uniform.trim() || c.subjects.length || c.homework.length || c.piket.length || c.notes.trim() || c.announcements.trim());
   const emergency = r.kind === 'emergency';
   return (
