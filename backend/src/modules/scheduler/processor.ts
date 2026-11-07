@@ -162,8 +162,8 @@ async function finalize(rem: ReminderRow, jobRowId: string, ok: boolean, error: 
     await logActivity({ action: ok ? `reminder.${newStatus}` : 'reminder.failed', entityType: 'reminder', entityId: rem.id, metadata: error ? { error } : {} }, undefined, db);
   });
   if (plan) await publishPlan(plan);
-  if (newStatus === 'sent' || newStatus === 'due') {
-    // Everyone who enabled notifications on the public class page.
+  if (newStatus === 'sent') {
+    // Everyone who enabled notifications on the public class page. ('due' reminders notify them later, when an admin marks them as sent.)
     if (await isPublicEnabled().catch(() => false)) {
       await notifyPublic(publicNotification(rem)).catch((err) => logger.warn({ err }, 'public push failed'));
     }

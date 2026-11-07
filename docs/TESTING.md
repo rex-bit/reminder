@@ -51,6 +51,6 @@ Legend: ✅ run during development (see notes) · ☐ run it yourself after depl
 - ☐ With `public.enabled` off, `/#/` shows "Halaman belum aktif" and `GET /public/feed` returns 404.
 - ☐ Turn it on in Settings: logged-out visitors see `/#/` with today's, upcoming and previous reminders; drafts never appear.
 - ☐ The page and `/public/feed` contain no recipients, phone numbers or admin names.
-- ☐ Enable notifications as a visitor; schedule a reminder 2 minutes ahead; the notification arrives and opens the page.
+- ☐ Enable notifications as a visitor; schedule a manual-share reminder 2 minutes ahead: the page shows nothing yet. Press Mark as sent: only now the notification arrives and the reminder appears.
 - ☐ A device that is also an admin device gets one notification, not two.
 - ☐ An emergency announcement is pinned on top for 3 days.

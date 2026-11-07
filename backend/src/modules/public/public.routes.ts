@@ -11,6 +11,7 @@ import { appTimezone, isPublicEnabled } from './public.service';
 /**
  * Read-only class page. No login. Only fields meant for students are returned:
  * no recipients, no phone numbers, no delivery logs, no admin names.
+ * Only reminders already marked as sent are visible (never drafts, scheduled, waiting-to-send, failed or cancelled).
  * Everything is off until the Owner turns on the `public.enabled` setting.
  */
 export const publicRouter = Router();
@@ -32,14 +33,14 @@ publicRouter.get('/feed', asyncHandler(async (_req, res) => {
   const tz = await appTimezone();
   const upcoming = await query(
     `SELECT ${COLS} FROM reminders
-      WHERE deleted_at IS NULL AND status IN ('pending','due','sent')
+      WHERE deleted_at IS NULL AND status = 'sent'
         AND reminder_date BETWEEN (now() AT TIME ZONE $1)::date AND (now() AT TIME ZONE $1)::date + 7
       ORDER BY reminder_date, scheduled_at NULLS LAST, created_at`,
     [tz],
   );
   const recent = await query(
     `SELECT ${COLS} FROM reminders
-      WHERE deleted_at IS NULL AND status IN ('due','sent')
+      WHERE deleted_at IS NULL AND status = 'sent'
         AND reminder_date < (now() AT TIME ZONE $1)::date AND reminder_date >= (now() AT TIME ZONE $1)::date - 14
       ORDER BY reminder_date DESC, sent_at DESC NULLS LAST LIMIT 20`,
     [tz],
@@ -47,9 +48,9 @@ publicRouter.get('/feed', asyncHandler(async (_req, res) => {
   // Emergency notices stay pinned for 3 days after they were released.
   const pinned = await query(
     `SELECT ${COLS} FROM reminders
-      WHERE deleted_at IS NULL AND kind = 'emergency' AND status IN ('due','sent')
-        AND COALESCE(sent_at, scheduled_at, created_at) > now() - interval '3 days'
-      ORDER BY COALESCE(sent_at, scheduled_at, created_at) DESC LIMIT 5`,
+      WHERE deleted_at IS NULL AND kind = 'emergency' AND status = 'sent'
+        AND COALESCE(sent_at, created_at) > now() - interval '3 days'
+      ORDER BY COALESCE(sent_at, created_at) DESC LIMIT 5`,
   );
   res.json({ timezone: tz, today: new Date().toISOString(), pinned: pinned.rows, upcoming: upcoming.rows, recent: recent.rows });
 }));

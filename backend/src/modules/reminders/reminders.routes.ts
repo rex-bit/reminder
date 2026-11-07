@@ -1,11 +1,14 @@
 import { Router, type Request } from 'express';
 import type { z } from 'zod';
+import { logger } from '../../config/logger';
 import { AppError, asyncHandler, badRequest, conflict, notFoundError } from '../../http/errors';
 import { validate } from '../../http/validate';
 import { Db, query, withTx } from '../../db/pool';
 import { authenticate } from '../../middleware/auth';
 import { requirePermission } from '../../middleware/rbac';
 import { logActivity } from '../activity/activity.service';
+import { isPublicEnabled, publicNotification } from '../public/public.service';
+import { notifyPublic } from '../push/push.service';
 import { cancelOpenJobs, planJob, publishPlan, type Plan } from '../scheduler/schedule';
 import { idParams, listQuery, reminderInput, scheduleBody, type ReminderInput } from './reminders.schema';
 
@@ -258,7 +261,12 @@ remindersRouter.post(
       await query(`UPDATE manual_shares SET status = 'done', done_at = now(), done_by = $2 WHERE reminder_id = $1 AND status = 'due'`, [id, req.admin!.id], db);
       await logActivity({ action: 'reminder.mark_sent', entityType: 'reminder', entityId: id }, req, db);
     });
-    res.json({ reminder: await load(id) });
+    const reminder = await load(id);
+    // Students are notified only now that the message is really in the class group.
+    if (reminder && (await isPublicEnabled().catch(() => false))) {
+      await notifyPublic(publicNotification(reminder as never)).catch((err) => logger.warn({ err }, 'public push failed'));
+    }
+    res.json({ reminder });
   }),
 );
 

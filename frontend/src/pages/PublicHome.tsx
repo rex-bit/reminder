@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { longDate, todayIso } from '../lib/format';
 import { disablePublicPush, enablePublicPush, getPublicPushState, needsHomeScreenInstall, type PushState } from '../lib/push';
 import { useAsync } from '../lib/useAsync';
-import { Badge, Button, Card, LinkButton } from '../ui/controls';
+import { Button, Card, LinkButton } from '../ui/controls';
 import { useOverlay } from '../ui/overlay';
 import { EmptyState, ErrorState, LoadingList } from '../ui/states';
 
@@ -33,7 +33,6 @@ function ReminderCard({ r, highlight }: { r: PublicReminder; highlight?: boolean
           <h3 className="title-m">{emergency ? '🚨 ' : ''}{r.title}</h3>
           <div className="body-s muted">{longDate(r.reminder_date)}</div>
         </div>
-        {r.status === 'pending' && <Badge status="pending">Terjadwal</Badge>}
       </div>
       {!hasContent && r.custom_message ? (
         <p className="body-m" style={{ whiteSpace: 'pre-wrap' }}>{r.custom_message}</p>
