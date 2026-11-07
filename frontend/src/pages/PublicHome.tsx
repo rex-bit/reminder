@@ -6,7 +6,9 @@ import { useAuth } from '../auth/AuthProvider';
 import { longDate, todayIso } from '../lib/format';
 import { disablePublicPush, enablePublicPush, getPublicPushState, needsHomeScreenInstall, type PushState } from '../lib/push';
 import { useAsync } from '../lib/useAsync';
-import { Button, Card, LinkButton } from '../ui/controls';
+import { SEED_PRESETS } from '../theme/palette';
+import { useTheme, type ThemeMode } from '../theme/ThemeProvider';
+import { Button, Card, LinkButton, Segmented } from '../ui/controls';
 import { useOverlay } from '../ui/overlay';
 import { EmptyState, ErrorState, LoadingList } from '../ui/states';
 
@@ -89,6 +91,29 @@ function ReminderCard({ r, highlight }: { r: PublicReminder; highlight?: boolean
         </div>
       )}
     </Card>
+  );
+}
+
+/** Look & feel for visitors: saved on their own device only. */
+function AppearanceCard() {
+  const { mode, setMode, seed, setSeed } = useTheme();
+  return (
+    <details>
+      <summary className="title-m" style={{ cursor: 'pointer', padding: '8px 0' }}>🎨 Tampilan &amp; warna</summary>
+      <Card variant="outlined">
+        <Segmented<ThemeMode> label="Tema" value={mode} onChange={setMode} options={[{ value: 'light', label: 'Terang' }, { value: 'dark', label: 'Gelap' }, { value: 'system', label: 'Otomatis' }]} />
+        <div className="row" role="group" aria-label="Warna aksen">
+          {SEED_PRESETS.map((p) => (
+            <button key={p.hex} className="swatch" style={{ background: p.hex }} aria-label={p.name} aria-pressed={seed.toLowerCase() === p.hex} title={p.name} onClick={() => setSeed(p.hex)} />
+          ))}
+          <label className="row" style={{ gap: 8 }}>
+            <input type="color" value={seed} onChange={(e) => setSeed(e.target.value)} aria-label="Warna kustom" style={{ width: 40, height: 40, border: 0, padding: 0, background: 'none' }} />
+            <span className="body-s muted">Pilih sendiri</span>
+          </label>
+        </div>
+        <p className="body-s muted">Tersimpan di perangkat ini saja.</p>
+      </Card>
+    </details>
   );
 }
 
@@ -194,6 +219,7 @@ export function PublicHomePage() {
           )}
         </>
       )}
+      <AppearanceCard />
       {feed.error && d && <div className="banner error">{feed.error}</div>}
       <p className="body-s muted" style={{ textAlign: 'center' }}>Halaman ini hanya untuk dibaca.</p>
     </div>

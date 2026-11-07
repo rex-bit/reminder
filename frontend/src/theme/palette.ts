@@ -140,4 +140,10 @@ export const SEED_PRESETS: { name: string; hex: string }[] = [
   { name: 'Green', hex: '#3f8f3f' },
   { name: 'Orange', hex: '#e8710a' },
   { name: 'Rose', hex: '#d6336c' },
+  { name: 'Red', hex: '#d32f2f' },
+  { name: 'Indigo', hex: '#3949ab' },
+  { name: 'Cyan', hex: '#0097a7' },
+  { name: 'Lime', hex: '#7cb342' },
+  { name: 'Amber', hex: '#f9a825' },
+  { name: 'Brown', hex: '#795548' },
 ];
