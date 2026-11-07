@@ -15,7 +15,7 @@ import { appTimezone, isPublicEnabled } from './public.service';
  */
 export const publicRouter = Router();
 
-const limiter = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'rate_limited', message: 'Too many requests, please try again later' } } });
+const limiter = rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'rate_limited', message: 'Too many requests, please try again later' } } });
 const subscribeLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'rate_limited', message: 'Too many requests, please try again later' } } });
 const MAX_PUBLIC_SUBSCRIPTIONS = 5000;
 

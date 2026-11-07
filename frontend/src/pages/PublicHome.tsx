@@ -22,7 +22,8 @@ function Section({ icon, title, children }: { icon: string; title: string; child
 }
 
 function ReminderCard({ r, highlight }: { r: PublicReminder; highlight?: boolean }) {
-  const c = r.content;
+  // Older or partial rows may lack some keys; never crash the public page on them.
+  const c = { uniform: '', subjects: [], homework: [], piket: [], notes: '', announcements: '', ...r.content };
   const hasContent = Boolean(c.uniform.trim() || c.subjects.length || c.homework.length || c.piket.length || c.notes.trim() || c.announcements.trim());
   const emergency = r.kind === 'emergency';
   return (
@@ -148,6 +149,7 @@ export function PublicHomePage() {
   const todays = d?.upcoming.filter((r) => r.reminder_date === today) ?? [];
   const later = d?.upcoming.filter((r) => r.reminder_date !== today) ?? [];
   const pinned = d?.pinned ?? [];
+  const recent = (d?.recent ?? []).filter((r) => !pinned.some((p) => p.id === r.id));
   const disabled = feed.error && feed.error.toLowerCase().includes('not enabled');
 
   return (
@@ -185,10 +187,10 @@ export function PublicHomePage() {
             </>
           )}
 
-          {d.recent.length > 0 && (
+          {recent.length > 0 && (
             <details>
-              <summary className="title-m" style={{ cursor: 'pointer', padding: '8px 0' }}>Sebelumnya ({d.recent.length})</summary>
-              <div className="stack">{d.recent.map((r) => <ReminderCard key={r.id} r={r} />)}</div>
+              <summary className="title-m" style={{ cursor: 'pointer', padding: '8px 0' }}>Sebelumnya ({recent.length})</summary>
+              <div className="stack">{recent.map((r) => <ReminderCard key={r.id} r={r} />)}</div>
             </details>
           )}
         </>
