@@ -27,7 +27,7 @@ npm run dev                     # http://localhost:4000/healthz (API + delivery 
 
 Generate secrets with `openssl rand -base64 48`.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/API.md`](docs/API.md).
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/API.md`](docs/API.md), [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) (Vercel + Pterodactyl + Nginx) and [`docs/TESTING.md`](docs/TESTING.md).
 
 **Phase 4 status:** the webhook signature check, status parsing and the SQL that applies statuses (ordering, duplicates) were executed and pass. Nothing has been sent through the real Meta API: that needs your Meta app, token and an approved number or template.
 
@@ -40,7 +40,8 @@ cd frontend
 cp .env.example .env     # VITE_API_URL=https://api.example.com/api/v1
 npm install
 npm run dev              # http://localhost:5173
-npm run build            # static files in dist/ (GitHub Pages: set VITE_BASE=/<repo>/)
+npm run build            # static files in dist/ (Vercel: root dir `frontend`; GitHub Pages: set VITE_BASE=/<repo>/)
+npm run typecheck        # not part of build; run it to catch type errors
 ```
 
 - Material 3 theme with dynamic color from a seed color (OKLCH-based approximation of M3 tonal palettes), light/dark/system, saved in `localStorage`.
