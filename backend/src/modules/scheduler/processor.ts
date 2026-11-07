@@ -1,0 +1,162 @@
+import type { Job } from 'bullmq';
+import { env } from '../../config/env';
+import { logger } from '../../config/logger';
+import { query, withTx, type Db } from '../../db/pool';
+import { buildMessage, type Content } from '../../lib/message';
+import { addToDate, utcToZoned, zonedToUtc } from '../../lib/time';
+import { logActivity } from '../activity/activity.service';
+import { dispatch } from './dispatch';
+import type { DeliverJobData } from './queue';
+import { planJob, publishPlan, type Plan } from './schedule';
+
+interface JobRow {
+  id: string;
+  reminder_id: string;
+  run_at: Date;
+  status: string;
+}
+interface ReminderRow {
+  id: string;
+  title: string;
+  kind: string;
+  status: string;
+  reminder_date: string;
+  content: Content;
+  custom_message: string | null;
+  timezone: string;
+  scheduled_at: Date | null;
+  recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
+  recurrence_until: string | null;
+}
+interface DeliveryRow {
+  id: string;
+  idempotency_key: string;
+  message_body: string;
+  attempt: number;
+  type: 'individual' | 'group';
+  phone_e164: string | null;
+  wa_group_id: string | null;
+}
+
+/** Thrown to make BullMQ retry (exponential backoff) while some deliveries failed for transient reasons. */
+export class RetryLater extends Error {}
+
+export async function processDelivery(job: Job<DeliverJobData>): Promise<void> {
+  const { jobRowId, reminderId } = job.data;
+  const attempt = job.attemptsMade + 1;
+  const maxAttempts = job.opts.attempts ?? env.DELIVERY_MAX_ATTEMPTS;
+
+  // Claim. A cancelled/finished job row means the schedule changed after this queue entry was created.
+  const claimed = await query<JobRow>(
+    `UPDATE scheduled_jobs SET status = 'active', started_at = COALESCE(started_at, now()), attempts = $2
+      WHERE id = $1 AND status IN ('scheduled', 'queued', 'active') RETURNING id, reminder_id, run_at, status`,
+    [jobRowId, attempt],
+  );
+  if (!claimed.rows[0]) {
+    logger.info({ jobRowId }, 'job no longer active, skipping');
+    return;
+  }
+  const jobRow = claimed.rows[0];
+
+  const rem = (await query<ReminderRow>(
+    `SELECT id, title, kind, status, reminder_date, content, custom_message, timezone, scheduled_at, recurrence, recurrence_until
+       FROM reminders WHERE id = $1 AND deleted_at IS NULL`,
+    [reminderId],
+  )).rows[0];
+  if (!rem || !['pending', 'failed'].includes(rem.status)) {
+    await query(`UPDATE scheduled_jobs SET status = 'cancelled', finished_at = now() WHERE id = $1`, [jobRowId]);
+    return;
+  }
+
+  // Create one delivery row per automatic recipient. The unique idempotency key makes a re-run a no-op.
+  // Keyed on the reminder's scheduled instant (not the job row) so retries and re-runs never create a second delivery for the same recipient.
+  const runKey = (rem.scheduled_at ?? jobRow.run_at).getTime();
+  const message = buildMessage(rem);
+  await query(
+    `INSERT INTO delivery_logs (reminder_id, job_id, recipient_id, channel, status, idempotency_key, message_body)
+     SELECT $1::uuid, $2::uuid, r.id, r.channel, 'queued'::delivery_status, $5::text || r.id::text || ':run:' || $3::text, $4::text
+       FROM reminder_recipients rr JOIN recipients r ON r.id = rr.recipient_id
+      WHERE rr.reminder_id = $1 AND r.is_active AND r.deleted_at IS NULL AND r.channel = 'whatsapp_cloud'
+     ON CONFLICT (idempotency_key) DO NOTHING`,
+    [reminderId, jobRowId, String(runKey), message, `reminder:${reminderId}:recipient:`],
+  );
+
+  const pending = await query<DeliveryRow>(
+    `SELECT d.id, d.idempotency_key, d.message_body, d.attempt, r.type, r.phone_e164, r.wa_group_id
+       FROM delivery_logs d JOIN recipients r ON r.id = d.recipient_id
+      WHERE d.reminder_id = $1 AND d.status = 'queued' ORDER BY d.created_at`,
+    [reminderId],
+  );
+
+  const total = await query<{ n: string }>(`SELECT count(*) AS n FROM delivery_logs WHERE reminder_id = $1`, [reminderId]);
+  if (Number(total.rows[0]?.n ?? 0) === 0) {
+    await finalize(rem, jobRowId, false, 'No active WhatsApp Cloud API recipients for this reminder');
+    return;
+  }
+
+  for (const d of pending.rows) {
+    const res = await dispatch({
+      deliveryId: d.id,
+      idempotencyKey: d.idempotency_key,
+      body: d.message_body,
+      recipient: { type: d.type, phone_e164: d.phone_e164, wa_group_id: d.wa_group_id },
+    });
+    if (res.ok) {
+      await query(
+        `UPDATE delivery_logs SET status = 'accepted', wa_message_id = $2, error_code = NULL, error_message = NULL WHERE id = $1`,
+        [d.id, res.messageId],
+      );
+    } else {
+      const giveUp = !res.retryable || attempt >= maxAttempts;
+      await query(
+        `UPDATE delivery_logs SET status = $2::delivery_status, attempt = attempt + 1, error_code = $3, error_message = $4 WHERE id = $1`,
+        [d.id, giveUp ? 'failed' : 'queued', res.code, res.message.slice(0, 500)],
+      );
+    }
+  }
+
+  const left = await query<{ n: string }>(`SELECT count(*) AS n FROM delivery_logs WHERE reminder_id = $1 AND status = 'queued'`, [reminderId]);
+  if (Number(left.rows[0]?.n ?? 0) > 0) throw new RetryLater(`${left.rows[0]?.n} deliveries will be retried`);
+
+  const failed = await query<{ n: string }>(`SELECT count(*) AS n FROM delivery_logs WHERE reminder_id = $1 AND status = 'failed'`, [reminderId]);
+  const anyFailed = Number(failed.rows[0]?.n ?? 0) > 0;
+  await finalize(rem, jobRowId, !anyFailed, anyFailed ? 'One or more deliveries failed' : null);
+}
+
+async function finalize(rem: ReminderRow, jobRowId: string, ok: boolean, error: string | null): Promise<void> {
+  let plan = null as Plan | null;
+  await withTx(async (db) => {
+    await query(`UPDATE scheduled_jobs SET status = $2::job_status, finished_at = now(), last_error = $3 WHERE id = $1`, [jobRowId, ok ? 'completed' : 'failed', error], db);
+    await query(
+      `UPDATE reminders SET status = $2::reminder_status, sent_at = CASE WHEN $3::boolean THEN now() ELSE sent_at END WHERE id = $1`,
+      [rem.id, ok ? 'sent' : 'failed', ok],
+      db,
+    );
+    if (ok) plan = await createNextOccurrence(db, rem);
+    await logActivity({ action: ok ? 'reminder.sent' : 'reminder.failed', entityType: 'reminder', entityId: rem.id, metadata: error ? { error } : {} }, undefined, db);
+  });
+  if (plan) await publishPlan(plan);
+}
+
+/** Recurring reminders: create the next occurrence as its own pending reminder (copying recipients). */
+async function createNextOccurrence(db: Db, rem: ReminderRow): Promise<Plan | null> {
+  if (rem.recurrence === 'none' || !rem.scheduled_at) return null;
+  const nextDate = addToDate(rem.reminder_date, rem.recurrence);
+  if (rem.recurrence_until && nextDate > rem.recurrence_until) return null;
+
+  const exists = await query(`SELECT 1 FROM reminders WHERE source_reminder_id = $1 AND reminder_date = $2 AND deleted_at IS NULL`, [rem.id, nextDate], db);
+  if (exists.rowCount) return null;
+
+  const wall = utcToZoned(rem.scheduled_at, rem.timezone);
+  const nextRun = zonedToUtc(addToDate(wall.date, rem.recurrence), wall.time, rem.timezone);
+  const ins = await query<{ id: string }>(
+    `INSERT INTO reminders (title, kind, status, reminder_date, content, custom_message, template_id, timezone, scheduled_at, recurrence, recurrence_until, source_reminder_id, created_by)
+     SELECT title, kind, 'pending'::reminder_status, $2::date, content, custom_message, template_id, timezone, $3::timestamptz, recurrence, recurrence_until, id, created_by FROM reminders WHERE id = $1
+     RETURNING id`,
+    [rem.id, nextDate, nextRun.toISOString()],
+    db,
+  );
+  const newId = ins.rows[0]!.id;
+  await query(`INSERT INTO reminder_recipients (reminder_id, recipient_id) SELECT $2, recipient_id FROM reminder_recipients WHERE reminder_id = $1`, [rem.id, newId], db);
+  return planJob(db, newId, nextRun, 'send');
+}

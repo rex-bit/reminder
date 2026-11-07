@@ -1,5 +1,8 @@
-import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow, types } from 'pg';
 import { env } from '../config/env';
+
+// Keep DATE columns as 'YYYY-MM-DD' strings (the default converts to a local-time Date and shifts the day).
+types.setTypeParser(1082, (v) => v);
 
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,

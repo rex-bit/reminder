@@ -147,7 +147,7 @@ export interface AppSettings {
   'app.timezone': string;
   'app.name': string;
   'whatsapp.groups_supported': boolean;
-  'reminders.default_send_time': string;
+  'reminder.default_send_time': string;
 }
 
 export const EMPTY_CONTENT: ReminderContent = {

@@ -29,7 +29,9 @@ export async function seed(): Promise<void> {
     // 3. Default application settings (never overwritten once set).
     const defaults: Array<[string, unknown, string]> = [
       ['app.timezone', env.DEFAULT_TIMEZONE, 'Default IANA timezone for scheduling'],
+      ['app.name', 'Reminder', 'Display name of the application'],
       ['reminder.default_send_time', '06:00', 'Default send time (HH:mm) in the app timezone'],
+      ['whatsapp.groups_supported', false, 'Whether the business number is eligible for the WhatsApp Groups API (verify with Meta first)'],
       ['delivery.max_attempts', 5, 'Maximum delivery attempts per recipient'],
     ];
     for (const [key, value, description] of defaults) {

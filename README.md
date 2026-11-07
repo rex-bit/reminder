@@ -6,7 +6,7 @@ Personal project: reminder management for admins, with scheduled delivery throug
 
 | Dir | Purpose | Status |
 |---|---|---|
-| `backend/` | Express + PostgreSQL REST API (auth, RBAC, reminders, scheduler) | Phase 1 done |
+| `backend/` | Express + PostgreSQL REST API (auth, RBAC, reminders, scheduler) | Phase 1 + 3 written (Phase 3 not yet run end-to-end) |
 | `bot/` | Separate WhatsApp Cloud API service | Phase 4 |
 | `frontend/` | React + TS, Material 3 (deployable to GitHub Pages) | Phase 2 written, not yet built/run (see below) |
 | `docs/` | Architecture, API, deployment | ongoing |
@@ -22,12 +22,14 @@ cp .env.example .env            # fill in secrets (see comments inside)
 npm install
 npm run migrate                 # apply SQL migrations
 npm run seed                    # roles, permissions, first Owner account
-npm run dev                     # http://localhost:4000/healthz
+npm run dev                     # http://localhost:4000/healthz (API + delivery worker; needs Redis)
 ```
 
 Generate secrets with `openssl rand -base64 48`.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/API.md`](docs/API.md).
+
+**Phase 3 status:** the SQL used by the scheduler and APIs was run against a real PostgreSQL 16 (dedupe of jobs and deliveries, retries, recurrence insert). The Node code has only been syntax-checked and its time/message helpers executed; `npm install` was not possible, so `tsc`, `vitest` and a live server + Redis run are still to do.
 
 ## Phase 2 quick start (frontend)
 

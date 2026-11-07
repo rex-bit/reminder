@@ -41,7 +41,7 @@ function AppSettingsCard({ initial, canEdit, onSaved }: { initial: AppSettings; 
       <SelectField label="Default timezone" value={s['app.timezone']} onChange={(e) => set('app.timezone', e.target.value)} disabled={!canEdit} help="Used for new reminders and schedule times">
         {(TIMEZONES.includes(s['app.timezone']) ? TIMEZONES : [s['app.timezone'], ...TIMEZONES]).map((z) => <option key={z}>{z}</option>)}
       </SelectField>
-      <TimeField label="Default send time" value={s['reminders.default_send_time']} onChange={(e) => set('reminders.default_send_time', e.target.value)} disabled={!canEdit} />
+      <TimeField label="Default send time" value={s['reminder.default_send_time']} onChange={(e) => set('reminder.default_send_time', e.target.value)} disabled={!canEdit} />
       <Switch checked={s['whatsapp.groups_supported']} onChange={(v) => set('whatsapp.groups_supported', v)} disabled={!canEdit} label="My WhatsApp business number is eligible for the Groups API" />
       <p className="body-s muted">Leave this off unless Meta has enabled group messaging for your number. Group recipients otherwise use manual sharing.</p>
       {canEdit ? <div><Button loading={busy} onClick={save}>Save settings</Button></div> : <p className="body-s muted">You can view these settings but not change them.</p>}

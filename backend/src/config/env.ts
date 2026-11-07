@@ -33,6 +33,14 @@ const schema = z
     OWNER_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(12).max(72).optional()),
 
     BOT_API_KEY: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
+    // Base URL of the WhatsApp bot service (Phase 4). Without it, deliveries fail with `bot_not_configured`; nothing is simulated.
+    BOT_SERVICE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+
+    // --- Queue (BullMQ on Redis) ---
+    REDIS_URL: z.string().default('redis://localhost:6379'),
+    // Set false to run the API without the delivery worker (e.g. a separate worker process).
+    RUN_WORKER: bool.default('true'),
+    DELIVERY_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
   })
   .superRefine((v, ctx) => {
     if (v.COOKIE_SAMESITE === 'none' && !v.COOKIE_SECURE) {
