@@ -7,6 +7,7 @@ import { TIMEZONES } from '../lib/format';
 import { useAsync } from '../lib/useAsync';
 import { SEED_PRESETS } from '../theme/palette';
 import { useTheme, type ThemeMode } from '../theme/ThemeProvider';
+import { disablePush, enablePush, getPushState, needsHomeScreenInstall, sendTestPush, type PushState } from '../lib/push';
 import { Button, Card, SelectField, Segmented, Switch, TextField, TimeField } from '../ui/controls';
 import { useOverlay } from '../ui/overlay';
 import { AsyncView } from '../ui/states';
@@ -49,6 +50,56 @@ function AppSettingsCard({ initial, canEdit, onSaved }: { initial: AppSettings; 
   );
 }
 
+function NotificationsCard() {
+  const { notify } = useOverlay();
+  const state = useAsync(() => getPushState(), []);
+  const [busy, setBusy] = useState(false);
+  const label: Record<PushState, string> = {
+    unsupported: 'This browser does not support push notifications.',
+    'server-disabled': 'Notifications are not set up on the server yet (VAPID keys missing).',
+    denied: 'Notifications are blocked for this site. Allow them in your browser or phone settings, then reload.',
+    off: 'Off on this device.',
+    on: 'On for this device.',
+  };
+
+  async function run(fn: () => Promise<unknown>, done: string) {
+    setBusy(true);
+    try {
+      await fn();
+      notify(done);
+      state.reload();
+    } catch (e) {
+      notify(errorMessage(e), { kind: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card variant="outlined">
+      <h2 className="title-m">Notifications</h2>
+      <p className="body-m muted">Get a notification when a reminder is ready to be sent, so you can tap it and share it on WhatsApp.</p>
+      {needsHomeScreenInstall() && (
+        <div className="banner">On iPhone/iPad, first tap Share, then “Add to Home Screen”, and open the app from the Home Screen. Notifications only work from there.</div>
+      )}
+      {state.loading && !state.data ? <div className="spinner" role="status" aria-label="Loading" /> : state.error ? <div className="banner error">{state.error}</div> : (
+        <>
+          <p className="title-s">{state.data ? label[state.data.state] : ''}</p>
+          <div className="row">
+            {state.data?.state === 'off' && <Button loading={busy} icon="campaign" onClick={() => run(enablePush, 'Notifications enabled')}>Enable on this device</Button>}
+            {state.data?.state === 'on' && (
+              <>
+                <Button variant="tonal" loading={busy} onClick={() => run(sendTestPush, 'Test notification sent')}>Send test</Button>
+                <Button variant="outlined" loading={busy} onClick={() => run(disablePush, 'Notifications turned off')}>Turn off</Button>
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </Card>
+  );
+}
+
 export function SettingsPage() {
   const { can } = useAuth();
   const { mode, setMode, seed, setSeed } = useTheme();
@@ -73,6 +124,8 @@ export function SettingsPage() {
           </div>
         </div>
       </Card>
+
+      <NotificationsCard />
 
       {can('settings.read') && (
         <AsyncView state={settings} empty={null}>

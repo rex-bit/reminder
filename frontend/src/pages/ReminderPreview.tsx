@@ -85,6 +85,7 @@ export function ReminderPreviewPage() {
         {can('schedule.manage') && (r.status === 'draft' || r.status === 'pending') && <Button variant="tonal" icon="schedule" onClick={() => setScheduling(true)}>{r.status === 'pending' ? 'Reschedule' : 'Schedule'}</Button>}
         {can('schedule.manage') && r.status === 'pending' && <Button variant="outlined" icon="cancel" loading={busy === 'cancel'} onClick={() => act('cancel', 'Schedule cancelled', () => remindersApi.cancel(r.id))}>Cancel schedule</Button>}
         {can('reminders.send') && (r.status === 'draft' || r.status === 'pending') && r.recipient_ids.length > 0 && <Button icon="send" loading={busy === 'send'} onClick={sendNow}>Send now</Button>}
+        {can('reminders.send') && r.status === 'due' && <Button icon="check" loading={busy === 'mark'} onClick={async () => { if (await confirm({ title: 'Mark as sent?', body: 'Confirm that you sent it on WhatsApp. This only records it.', confirmLabel: 'Yes, I sent it' })) await act('mark', 'Marked as sent', () => remindersApi.markSent(r.id)); }}>Mark as sent</Button>}
         {can('reminders.send') && r.status === 'failed' && <Button icon="refresh" loading={busy === 'retry'} onClick={() => act('retry', 'Retry queued', () => remindersApi.retryFailed(r.id))}>Retry failed</Button>}
         {can('reminders.create') && <Button variant="outlined" icon="copy" onClick={async () => { try { const c = await remindersApi.duplicate(r.id); notify('Duplicated as draft'); nav(`/reminders/${c.id}/edit`); } catch (e) { notify(errorMessage(e), { kind: 'error' }); } }}>Duplicate</Button>}
         {can('reminders.delete') && <Button variant="text" danger icon="delete" onClick={remove}>Delete</Button>}
@@ -102,7 +103,7 @@ export function ReminderPreviewPage() {
                 Share manually in WhatsApp
               </a>
             </div>
-            <p className="body-s muted">Manual sharing opens WhatsApp with this text; you choose the chat or group and press send yourself. It is not tracked as a delivery.</p>
+            <p className="body-s muted">Opens WhatsApp with this text; you choose the chat or group and press send yourself. WhatsApp does not tell us whether you sent it, so use “Mark as sent” to record it.</p>
           </Card>
 
           <Card variant="outlined">

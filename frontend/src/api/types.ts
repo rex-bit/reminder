@@ -1,6 +1,6 @@
 /** Shapes shared with the backend (see backend/migrations/001_init.sql and docs/API.md). */
 
-export type ReminderStatus = 'draft' | 'pending' | 'sent' | 'failed' | 'cancelled';
+export type ReminderStatus = 'draft' | 'pending' | 'due' | 'sent' | 'failed' | 'cancelled';
 export type ReminderKind = 'daily' | 'emergency';
 export type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 export type DeliveryChannel = 'whatsapp_cloud' | 'manual_share';
@@ -67,6 +67,8 @@ export interface Reminder {
   recurrence_until: string | null;
   sent_at: string | null;
   recipient_ids: string[];
+  /** Manual-share recipients of this occurrence; `done` once an admin marked it as sent. */
+  manual_shares: { recipient_id: string; name: string; done: boolean }[];
   created_at: string;
   updated_at: string;
 }

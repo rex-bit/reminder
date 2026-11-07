@@ -158,7 +158,7 @@ export function ReminderFormPage() {
               <div className="perm-group">
                 {activeRecipients.map((r) => (
                   <Checkbox key={r.id} checked={rids.includes(r.id)} onChange={(v) => setRids((x) => (v ? [...x, r.id] : x.filter((y) => y !== r.id)))}
-                    label={<>{r.name} <span className="body-s muted">· {r.channel === 'manual_share' ? 'manual share (you send it yourself)' : r.type === 'group' ? 'WhatsApp group' : r.phone_e164}</span></>} />
+                    label={<>{r.name} <span className="body-s muted">· {r.channel === 'manual_share' ? 'you get a notification and send it yourself' : r.type === 'group' ? 'WhatsApp group' : r.phone_e164}</span></>} />
                 ))}
               </div>
             )}

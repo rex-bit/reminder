@@ -43,7 +43,7 @@ Rules: Owner is immutable; granting is limited to permissions the actor holds; n
 `GET /delivery-logs?status&page&pageSize` (logs.delivery). `GET/PUT /settings` -> `{settings}` (settings.read / settings.update).
 
 ## Scheduling behavior
-- `POST /reminders/:id/schedule` and `/send` need at least one active recipient with the **WhatsApp Cloud API** channel. Manual-share recipients are sent by an admin and cannot be scheduled (422 `no_automatic_recipients`).
+- `POST /reminders/:id/schedule` and `/send` need at least one active recipient (422 `no_recipients`). Cloud API recipients are sent automatically. **Manual-share recipients** become tasks: at the scheduled time the reminder gets status `due` and admins with `reminders.send` receive a push notification.
 - A scheduled reminder is a `scheduled_jobs` row (source of truth) plus a delayed BullMQ job. If Redis loses the job, a reconcile pass (boot + every minute) re-adds it. Scheduling the same instant twice resolves to one job.
 - Delivery rows are keyed `reminder:<id>:recipient:<id>:run:<scheduled epoch>` (unique), so retries and re-runs never create a second delivery for a recipient.
 - Transient failures (network, 429, 5xx) are retried with exponential backoff up to `DELIVERY_MAX_ATTEMPTS`; other failures fail immediately. `POST /reminders/:id/retry` re-queues only failed deliveries.
@@ -56,3 +56,14 @@ Rules: Owner is immutable; granting is limited to permissions the actor holds; n
 ## Bot service API (backend -> bot)
 `POST /v1/messages` (`X-API-Key`, `Idempotency-Key`) `{ deliveryId, idempotencyKey, body, recipient: { type, phone_e164, wa_group_id } }` -> `202 { messageId }` or `4xx/5xx { error }`. 503 and 429 mean retryable.
 `GET /webhook` (Meta verification), `POST /webhook` (signed by Meta), `GET /healthz`.
+
+## Manual sending and push notifications
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/reminders/:id/mark-sent` | `due` -> `sent`; reminders.send. Only records that an admin sent it; WhatsApp gives no confirmation |
+| GET | `/push/config` | `{enabled, publicKey, devices}` |
+| POST | `/push/subscribe` | `{endpoint, keys:{p256dh,auth}}` (browser PushSubscription) |
+| POST | `/push/unsubscribe` | `{endpoint}` |
+| POST | `/push/test` | sends a test notification to the caller's devices |
+
+Reminder objects include `manual_shares: [{recipient_id, name, done}]`. Reminder statuses: `draft`, `pending`, `due`, `sent`, `failed`, `cancelled`.

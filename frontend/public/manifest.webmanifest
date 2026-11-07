@@ -1,0 +1,15 @@
+{
+  "name": "Reminder",
+  "short_name": "Reminder",
+  "description": "Schedule class reminders and get notified when it is time to send them.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fef7ff",
+  "theme_color": "#6750a4",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

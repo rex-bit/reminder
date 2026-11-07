@@ -5,6 +5,7 @@ import { query, withTx, type Db } from '../../db/pool';
 import { buildMessage, type Content } from '../../lib/message';
 import { addToDate, utcToZoned, zonedToUtc } from '../../lib/time';
 import { logActivity } from '../activity/activity.service';
+import { notifyAdmins } from '../push/push.service';
 import { dispatch } from './dispatch';
 import type { DeliverJobData } from './queue';
 import { planJob, publishPlan, type Plan } from './schedule';
@@ -88,9 +89,20 @@ export async function processDelivery(job: Job<DeliverJobData>): Promise<void> {
     [reminderId],
   );
 
+  // Manual-share recipients are never sent by the system: they become "due" tasks and admins are notified.
+  await query(
+    `INSERT INTO manual_shares (reminder_id, recipient_id, due_at)
+     SELECT $1::uuid, r.id, now() FROM reminder_recipients rr JOIN recipients r ON r.id = rr.recipient_id
+      WHERE rr.reminder_id = $1 AND r.is_active AND r.deleted_at IS NULL AND r.channel = 'manual_share'
+     ON CONFLICT (reminder_id, recipient_id) DO NOTHING`,
+    [reminderId],
+  );
+
   const total = await query<{ n: string }>(`SELECT count(*) AS n FROM delivery_logs WHERE reminder_id = $1`, [reminderId]);
   if (Number(total.rows[0]?.n ?? 0) === 0) {
-    await finalize(rem, jobRowId, false, 'No active WhatsApp Cloud API recipients for this reminder');
+    const manual = await query<{ n: string }>(`SELECT count(*) AS n FROM manual_shares WHERE reminder_id = $1`, [reminderId]);
+    if (Number(manual.rows[0]?.n ?? 0) === 0) await finalize(rem, jobRowId, false, 'No active recipients for this reminder');
+    else await finalize(rem, jobRowId, true, null); // manual-only reminder: becomes "due"
     return;
   }
 
@@ -132,17 +144,28 @@ export async function processDelivery(job: Job<DeliverJobData>): Promise<void> {
 
 async function finalize(rem: ReminderRow, jobRowId: string, ok: boolean, error: string | null): Promise<void> {
   let plan = null as Plan | null;
+  let newStatus: 'sent' | 'due' | 'failed' = 'failed';
   await withTx(async (db) => {
+    if (ok) {
+      const open = await query<{ n: string }>(`SELECT count(*) AS n FROM manual_shares WHERE reminder_id = $1 AND status = 'due'`, [rem.id], db);
+      newStatus = Number(open.rows[0]?.n ?? 0) > 0 ? 'due' : 'sent';
+    }
     await query(`UPDATE scheduled_jobs SET status = $2::job_status, finished_at = now(), last_error = $3 WHERE id = $1`, [jobRowId, ok ? 'completed' : 'failed', error], db);
     await query(
       `UPDATE reminders SET status = $2::reminder_status, sent_at = CASE WHEN $3::boolean THEN now() ELSE sent_at END WHERE id = $1`,
-      [rem.id, ok ? 'sent' : 'failed', ok],
+      [rem.id, newStatus, newStatus === 'sent'],
       db,
     );
+    // The next occurrence is created now (not when an admin marks "due" as sent), so a forgotten task never stops a series.
     if (ok) plan = await createNextOccurrence(db, rem);
-    await logActivity({ action: ok ? 'reminder.sent' : 'reminder.failed', entityType: 'reminder', entityId: rem.id, metadata: error ? { error } : {} }, undefined, db);
+    await logActivity({ action: ok ? `reminder.${newStatus}` : 'reminder.failed', entityType: 'reminder', entityId: rem.id, metadata: error ? { error } : {} }, undefined, db);
   });
   if (plan) await publishPlan(plan);
+  if (newStatus === 'due') {
+    await notifyAdmins('reminders.send', { title: `Perlu dikirim: ${rem.title}`, body: 'Ketuk untuk membuka dan kirim ke WhatsApp.', reminderId: rem.id, tag: `due-${rem.id}` }).catch((err) =>
+      logger.warn({ err }, 'push notification failed'),
+    );
+  }
 }
 
 /** Recurring reminders: create the next occurrence as its own pending reminder (copying recipients). */

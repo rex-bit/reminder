@@ -35,6 +35,13 @@ Therefore group sending is **off by default** in two places: `WHATSAPP_GROUPS_EN
 
 The adapter boundary (`backend/src/modules/scheduler/dispatch.ts` -> `bot/src/cloudApi.ts`) is the single place to extend when Meta supports more.
 
+## Notification flow for manual sharing (recommended for class groups)
+1. Create a recipient with delivery **Manual share** (e.g. "Kelas XI group").
+2. Schedule the reminder as usual. At the time, the server marks it **To send** and sends a Web Push notification to every admin who may send reminders.
+3. Tap the notification -> the reminder opens -> **Open WhatsApp** (prefilled text) -> choose the group, tag people, send -> **Mark as sent**.
+
+Needs once: `VAPID_*` keys in `backend/.env` (`npx web-push generate-vapid-keys`) and each admin pressing **Settings > Notifications > Enable on this device**. Limits: Android/desktop Chrome and Edge work in the browser; **iPhone/iPad need the site added to the Home Screen (iOS 16.4+)**; push is best-effort and a phone in battery saver may delay it; the tag-everyone step is done by you inside WhatsApp.
+
 ## Delivery status flow
 1. Backend queue job -> `POST bot/v1/messages` (header `X-API-Key`, `Idempotency-Key`).
 2. Bot calls `POST https://graph.facebook.com/<version>/<phone-number-id>/messages`. On success the delivery becomes `accepted` and stores Meta's message id.

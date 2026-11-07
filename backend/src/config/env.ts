@@ -36,6 +36,12 @@ const schema = z
     // Base URL of the WhatsApp bot service (Phase 4). Without it, deliveries fail with `bot_not_configured`; nothing is simulated.
     BOT_SERVICE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
 
+    // --- Web Push (notifications to admins). Generate: npx web-push generate-vapid-keys ---
+    VAPID_PUBLIC_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+    VAPID_PRIVATE_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+    // mailto:you@example.com or an https URL identifying the sender to push services
+    VAPID_SUBJECT: z.preprocess(emptyToUndefined, z.string().optional()),
+
     // --- Queue (BullMQ on Redis) ---
     REDIS_URL: z.string().default('redis://localhost:6379'),
     // Set false to run the API without the delivery worker (e.g. a separate worker process).

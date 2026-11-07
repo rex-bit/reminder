@@ -14,7 +14,9 @@ remindersRouter.use(authenticate);
 
 const SELECT = `SELECT r.id, r.title, r.kind, r.status, r.reminder_date, r.content, r.custom_message, r.template_id, r.timezone,
   r.scheduled_at, r.recurrence, r.recurrence_until, r.sent_at, r.created_at, r.updated_at,
-  COALESCE(ARRAY(SELECT rr.recipient_id FROM reminder_recipients rr WHERE rr.reminder_id = r.id), '{}') AS recipient_ids
+  COALESCE(ARRAY(SELECT rr.recipient_id FROM reminder_recipients rr WHERE rr.reminder_id = r.id), '{}') AS recipient_ids,
+  COALESCE((SELECT json_agg(json_build_object('recipient_id', rc.id, 'name', rc.name, 'done', ms.status = 'done') ORDER BY rc.name)
+              FROM manual_shares ms JOIN recipients rc ON rc.id = ms.recipient_id WHERE ms.reminder_id = r.id), '[]'::json) AS manual_shares
   FROM reminders r`;
 
 async function load(id: string, db?: Db) {
@@ -35,16 +37,16 @@ async function setRecipients(db: Db, reminderId: string, ids: string[]) {
   }
 }
 
-/** Scheduling needs at least one active recipient that the Cloud API can reach; manual-share recipients are sent by an admin. */
-async function requireAutomaticRecipients(db: Db, reminderId: string) {
+/** Scheduling needs at least one active recipient. Cloud API recipients are sent automatically; manual-share ones become "due" tasks. */
+async function requireAnyRecipient(db: Db, reminderId: string) {
   const res = await query(
     `SELECT count(*)::int AS n FROM reminder_recipients rr JOIN recipients r ON r.id = rr.recipient_id
-      WHERE rr.reminder_id = $1 AND r.is_active AND r.deleted_at IS NULL AND r.channel = 'whatsapp_cloud'`,
+      WHERE rr.reminder_id = $1 AND r.is_active AND r.deleted_at IS NULL`,
     [reminderId],
     db,
   );
   if ((res.rows[0] as { n: number }).n === 0) {
-    throw new AppError(422, 'no_automatic_recipients', 'Add at least one active WhatsApp Cloud API recipient. Manual-share recipients are sent by an admin and cannot be scheduled.');
+    throw new AppError(422, 'no_recipients', 'Add at least one active recipient before scheduling.');
   }
 }
 
@@ -55,7 +57,7 @@ remindersRouter.get(
   requirePermission('reminders.read'),
   asyncHandler(async (_req, res) => {
     const counts = await query<{ status: string; n: number }>(`SELECT status, count(*)::int AS n FROM reminders WHERE deleted_at IS NULL GROUP BY status`);
-    const base: Record<string, number> = { draft: 0, pending: 0, sent: 0, failed: 0, cancelled: 0 };
+    const base: Record<string, number> = { draft: 0, pending: 0, due: 0, sent: 0, failed: 0, cancelled: 0 };
     for (const r of counts.rows) base[r.status] = r.n;
     const next = await query(`${SELECT} WHERE r.deleted_at IS NULL AND r.status = 'pending' ORDER BY r.scheduled_at ASC LIMIT 5`);
     const recent = await query(`${SELECT} WHERE r.deleted_at IS NULL AND r.status IN ('sent','failed','cancelled') ORDER BY r.updated_at DESC LIMIT 5`);
@@ -196,7 +198,7 @@ async function schedule(req: Request, id: string, runAt: Date, action: string) {
     const cur = await query<{ status: string }>(`SELECT status FROM reminders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, [id], db);
     if (!cur.rows[0]) throw notFoundError('Reminder not found');
     if (!['draft', 'pending', 'cancelled'].includes(cur.rows[0].status)) throw conflict(`A ${cur.rows[0].status} reminder cannot be scheduled`);
-    await requireAutomaticRecipients(db, id);
+    await requireAnyRecipient(db, id);
     await query(`UPDATE reminders SET status = 'pending', scheduled_at = $2, updated_by = $3 WHERE id = $1`, [id, runAt.toISOString(), req.admin!.id], db);
     plan = await planJob(db, id, runAt, 'send');
     await logActivity({ action, entityType: 'reminder', entityId: id, metadata: { runAt: runAt.toISOString() } }, req, db);
@@ -240,6 +242,22 @@ remindersRouter.post(
       await logActivity({ action: 'reminder.cancel', entityType: 'reminder', entityId: id }, req, db);
     });
     await publishPlan({ job: null, cancelled });
+    res.json({ reminder: await load(id) });
+  }),
+);
+
+remindersRouter.post(
+  '/:id/mark-sent',
+  requirePermission('reminders.send'),
+  validate({ params: idParams }),
+  asyncHandler(async (req, res) => {
+    const id = req.params.id!;
+    await withTx(async (db) => {
+      const upd = await query(`UPDATE reminders SET status = 'sent', sent_at = now(), updated_by = $2 WHERE id = $1 AND status = 'due' AND deleted_at IS NULL RETURNING id`, [id, req.admin!.id], db);
+      if (!upd.rowCount) throw conflict('Only reminders waiting to be sent can be marked as sent');
+      await query(`UPDATE manual_shares SET status = 'done', done_at = now(), done_by = $2 WHERE reminder_id = $1 AND status = 'due'`, [id, req.admin!.id], db);
+      await logActivity({ action: 'reminder.mark_sent', entityType: 'reminder', entityId: id }, req, db);
+    });
     res.json({ reminder: await load(id) });
   }),
 );

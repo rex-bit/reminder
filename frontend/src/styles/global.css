@@ -238,6 +238,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .chip.static { cursor: default; height: 28px; font-size: 12px; }
 .badge { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: var(--r-full); font-size: 12px; font-weight: 600; background: var(--md-surface-container-highest); color: var(--md-on-surface-variant); }
 .badge.s-sent, .badge.s-delivered, .badge.s-read, .badge.s-active, .badge.s-completed { background: var(--md-success-container); color: var(--md-on-success-container); }
+.badge.s-due { background: var(--md-warning-container); color: var(--md-on-warning-container); }
 .badge.s-pending, .badge.s-queued, .badge.s-scheduled, .badge.s-accepted, .badge.s-draft { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 .badge.s-failed, .badge.s-disabled { background: var(--md-error-container); color: var(--md-on-error-container); }
 .badge.s-cancelled { background: var(--md-surface-container-highest); }

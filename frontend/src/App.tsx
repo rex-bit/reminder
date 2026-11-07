@@ -5,6 +5,7 @@ import { Shell } from './layout/Shell';
 import { ActivityLogsPage } from './pages/ActivityLogs';
 import { AdminsPage } from './pages/Admins';
 import { DashboardPage } from './pages/Dashboard';
+import { DuePage } from './pages/Due';
 import { DeliveryLogsPage } from './pages/DeliveryLogs';
 import { LoginPage } from './pages/Login';
 import { ProfilePage } from './pages/Profile';
@@ -44,6 +45,7 @@ export function App() {
         <Route path="reminders/new" element={<Guard perm="reminders.create"><ReminderFormPage /></Guard>} />
         <Route path="reminders/:id/edit" element={<Guard perm="reminders.update"><ReminderFormPage /></Guard>} />
         <Route path="reminders/:id" element={<Guard perm="reminders.read"><ReminderPreviewPage /></Guard>} />
+        <Route path="due" element={<Guard perm="reminders.read"><DuePage /></Guard>} />
         <Route path="scheduled" element={<Guard perm="reminders.read"><ReminderListPage mode="scheduled" /></Guard>} />
         <Route path="history" element={<Guard perm="reminders.read"><ReminderListPage mode="history" /></Guard>} />
         <Route path="templates" element={<Guard perm="templates.read"><TemplatesPage /></Guard>} />

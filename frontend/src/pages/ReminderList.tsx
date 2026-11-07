@@ -12,11 +12,11 @@ import { AsyncView, EmptyState } from '../ui/states';
 import { ScheduleDialog } from './ScheduleDialog';
 
 const MODES = {
-  scheduled: { title: 'Scheduled reminders', statuses: ['pending', 'failed', 'draft'] as ReminderStatus[], emptyIcon: 'schedule' as const, empty: 'No scheduled reminders', hint: 'Create a reminder and schedule it to see it here.' },
+  scheduled: { title: 'Scheduled reminders', statuses: ['pending', 'due', 'failed', 'draft'] as ReminderStatus[], emptyIcon: 'schedule' as const, empty: 'No scheduled reminders', hint: 'Create a reminder and schedule it to see it here.' },
   history: { title: 'Reminder history', statuses: ['sent', 'failed', 'cancelled'] as ReminderStatus[], emptyIcon: 'history' as const, empty: 'No history yet', hint: 'Reminders that were sent, failed or cancelled appear here.' },
 };
 
-const LABEL: Record<ReminderStatus, string> = { pending: 'Scheduled', failed: 'Failed', draft: 'Draft', sent: 'Sent', cancelled: 'Cancelled' };
+const LABEL: Record<ReminderStatus, string> = { pending: 'Scheduled', due: 'To send', failed: 'Failed', draft: 'Draft', sent: 'Sent', cancelled: 'Cancelled' };
 
 export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
   const cfg = MODES[mode];

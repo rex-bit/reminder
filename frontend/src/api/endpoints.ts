@@ -14,6 +14,7 @@ export const remindersApi = {
   remove: (id: string) => api<void>(`/reminders/${id}`, { method: 'DELETE' }),
   duplicate: (id: string) => api<{ reminder: Reminder }>(`/reminders/${id}/duplicate`, { method: 'POST' }).then((r) => r.reminder),
   schedule: (id: string, scheduledAt: string) => api<{ reminder: Reminder }>(`/reminders/${id}/schedule`, { method: 'POST', body: { scheduledAt } }),
+  markSent: (id: string) => api<{ reminder: Reminder }>(`/reminders/${id}/mark-sent`, { method: 'POST' }).then((r) => r.reminder),
   cancel: (id: string) => api<{ reminder: Reminder }>(`/reminders/${id}/cancel`, { method: 'POST' }),
   sendNow: (id: string) => api<{ reminder: Reminder }>(`/reminders/${id}/send`, { method: 'POST' }),
   retryFailed: (id: string) => api<{ queued: number }>(`/reminders/${id}/retry`, { method: 'POST' }),

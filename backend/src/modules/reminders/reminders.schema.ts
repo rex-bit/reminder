@@ -42,7 +42,7 @@ export const listQuery = z.object({
   q: z.string().trim().max(100).optional(),
   status: z
     .string()
-    .regex(/^(draft|pending|sent|failed|cancelled)(,(draft|pending|sent|failed|cancelled))*$/)
+    .regex(/^(draft|pending|due|sent|failed|cancelled)(,(draft|pending|due|sent|failed|cancelled))*$/)
     .optional(),
   kind: z.enum(['daily', 'emergency']).optional(),
   sort: z.enum(['scheduled_at', '-scheduled_at', 'reminder_date', '-reminder_date', 'updated_at', '-updated_at']).default('-updated_at'),

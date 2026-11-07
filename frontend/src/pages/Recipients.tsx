@@ -69,7 +69,7 @@ function RecipientDialog({ initial, onClose, onSaved }: { initial: Recipient | n
           <div className="banner">The Cloud API cannot message arbitrary existing groups. Only use this for a group created through the Groups API on your business number; otherwise choose “Manual share”.</div>
         </>
       )}
-      {channel === 'manual_share' && <div className="banner info">No message is sent automatically. On the reminder page you open WhatsApp and send it yourself.</div>}
+      {channel === 'manual_share' && <div className="banner info">The system does not message this recipient. At the scheduled time admins get a notification and the reminder appears under “To send”, where you open WhatsApp and send it yourself.</div>}
       <TextArea label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
       <Switch checked={active} onChange={setActive} label="Active" />
     </Dialog>

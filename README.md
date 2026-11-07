@@ -49,6 +49,9 @@ npm run build            # static files in dist/ (GitHub Pages: set VITE_BASE=/<
 - Date/time inputs use the browser's native pickers inside M3 text fields.
 - **Status:** the code has been syntax-checked and the palette/date helpers run, but `npm install`, `tsc` and `vite build` have not been run yet. Pages call the endpoints in [`docs/API.md`](docs/API.md); only `/auth/*` and `/activity` exist in the backend today, the rest arrive in Phase 3, so those pages show an error state until then.
 
+## Notifications instead of auto-posting (class groups)
+Because the official API cannot post into an existing group, the recommended setup is **Manual share + notifications**: at the scheduled time you get a push notification, tap it, and share the prefilled message to your group yourself. Setup: `npx web-push generate-vapid-keys`, put the keys in `backend/.env`, deploy the frontend over HTTPS, then Settings > Notifications > Enable. See `docs/WHATSAPP.md`.
+
 ## WhatsApp limitations (details in [`docs/WHATSAPP.md`](docs/WHATSAPP.md))
 
 - Only the official Cloud API is used. No WhatsApp Web automation or QR login.

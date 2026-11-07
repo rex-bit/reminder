@@ -8,6 +8,7 @@ import { Badge, Card, LinkButton } from '../ui/controls';
 import { AsyncView, EmptyState } from '../ui/states';
 
 const STAT_ORDER: { key: ReminderStatus; label: string }[] = [
+  { key: 'due', label: 'To send' },
   { key: 'pending', label: 'Scheduled' },
   { key: 'sent', label: 'Sent' },
   { key: 'failed', label: 'Failed' },
@@ -52,6 +53,12 @@ export function DashboardPage() {
       <AsyncView state={state} empty={null}>
         {(d) => (
           <>
+            {(d.counts.due ?? 0) > 0 && (
+              <Link to="/due" className="banner" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <strong>{d.counts.due} reminder{d.counts.due === 1 ? '' : 's'} waiting to be sent.</strong>
+                <span>Open “To send” to share them on WhatsApp.</span>
+              </Link>
+            )}
             <div className="grid cols-auto">
               {STAT_ORDER.map((s) => (
                 <Card key={s.key} variant={s.key === 'failed' && d.counts.failed > 0 ? 'tonal-primary' : 'filled'}>

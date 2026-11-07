@@ -15,10 +15,11 @@ interface Item {
 
 const ITEMS: Item[] = [
   { to: '/', label: 'Dashboard', icon: 'dashboard', perm: 'reminders.read', primary: true },
+  { to: '/due', label: 'To send', icon: 'send', perm: 'reminders.read', primary: true },
   { to: '/scheduled', label: 'Scheduled', icon: 'schedule', perm: 'reminders.read', primary: true },
   { to: '/history', label: 'History', icon: 'history', perm: 'reminders.read', primary: true },
-  { to: '/templates', label: 'Templates', icon: 'template', perm: 'templates.read', primary: true },
-  { to: '/recipients', label: 'Recipients', icon: 'send', perm: 'recipients.read' },
+  { to: '/templates', label: 'Templates', icon: 'template', perm: 'templates.read' },
+  { to: '/recipients', label: 'Recipients', icon: 'people', perm: 'recipients.read' },
   { to: '/delivery-logs', label: 'Delivery logs', icon: 'mail', perm: 'logs.delivery' },
   { to: '/activity', label: 'Activity logs', icon: 'receipt', perm: 'logs.activity' },
   { to: '/admins', label: 'Admins', icon: 'people', perm: 'admins.read' },
