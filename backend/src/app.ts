@@ -13,6 +13,7 @@ import { adminsRouter, permissionsRouter } from './modules/admins/admins.routes'
 import { authRouter } from './modules/auth/auth.routes';
 import { deliveriesRouter } from './modules/deliveries/deliveries.routes';
 import { internalRouter } from './modules/internal/internal.routes';
+import { publicRouter } from './modules/public/public.routes';
 import { pushRouter } from './modules/push/push.routes';
 import { recipientsRouter } from './modules/recipients/recipients.routes';
 import { remindersRouter } from './modules/reminders/reminders.routes';
@@ -60,6 +61,7 @@ export function createApp() {
   api.use('/delivery-logs', deliveriesRouter);
   api.use('/internal', internalRouter);
   api.use('/push', pushRouter);
+  api.use('/public', publicRouter);
   app.use('/api/v1', api);
 
   app.use(notFoundHandler);

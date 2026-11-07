@@ -58,3 +58,37 @@ export async function disablePush(): Promise<void> {
 }
 
 export const sendTestPush = () => api<{ sent: number }>('/push/test', { method: 'POST' });
+
+/* ---- Public page (students, no login) ---- */
+
+export async function getPublicPushState(): Promise<PushState> {
+  if (!pushSupported()) return 'unsupported';
+  const cfg = await api<{ enabled: boolean }>('/public/push/config', { auth: false });
+  if (!cfg.enabled) return 'server-disabled';
+  if (Notification.permission === 'denied') return 'denied';
+  const reg = await navigator.serviceWorker.getRegistration(BASE);
+  const sub = await reg?.pushManager.getSubscription();
+  return sub && Notification.permission === 'granted' ? 'on' : 'off';
+}
+
+export async function enablePublicPush(): Promise<void> {
+  const cfg = await api<{ enabled: boolean; publicKey: string | null }>('/public/push/config', { auth: false });
+  if (!cfg.enabled || !cfg.publicKey) throw new Error('Notifications are not available right now.');
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Notifikasi tidak diizinkan. Izinkan notifikasi untuk situs ini di pengaturan browser/HP.');
+  const reg = await registration();
+  await navigator.serviceWorker.ready;
+  const sub =
+    (await reg.pushManager.getSubscription()) ??
+    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(cfg.publicKey) as unknown as BufferSource }));
+  const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+  await api('/public/push/subscribe', { method: 'POST', body: { endpoint: json.endpoint, keys: json.keys }, auth: false });
+}
+
+export async function disablePublicPush(): Promise<void> {
+  const reg = await navigator.serviceWorker.getRegistration(BASE);
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return;
+  await api('/public/push/unsubscribe', { method: 'POST', body: { endpoint: sub.endpoint }, auth: false }).catch(() => undefined);
+  await sub.unsubscribe();
+}

@@ -9,6 +9,7 @@ import { DuePage } from './pages/Due';
 import { DeliveryLogsPage } from './pages/DeliveryLogs';
 import { LoginPage } from './pages/Login';
 import { ProfilePage } from './pages/Profile';
+import { PublicHomePage } from './pages/PublicHome';
 import { RecipientsPage } from './pages/Recipients';
 import { ReminderFormPage } from './pages/ReminderForm';
 import { ReminderListPage } from './pages/ReminderList';
@@ -34,12 +35,23 @@ export function App() {
       </div>
     );
   }
-  if (!admin) return <LoginPage />;
+  // Visitors without an account see the read-only class page; every other URL asks for a login (deep links keep working after sign-in).
+  if (!admin) {
+    return (
+      <Routes>
+        <Route path="/" element={<PublicHomePage />} />
+        <Route path="/home" element={<PublicHomePage />} />
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    );
+  }
   // Force a password change (Owner-created or reset accounts) before anything else.
   if (admin.must_change_password && loc.pathname !== '/profile') return <Navigate to="/profile" replace />;
 
   return (
     <Routes>
+      <Route path="home" element={<PublicHomePage />} />
+      <Route path="login" element={<Navigate to="/" replace />} />
       <Route element={<Shell />}>
         <Route index element={<Guard perm="reminders.read"><DashboardPage /></Guard>} />
         <Route path="reminders/new" element={<Guard perm="reminders.create"><ReminderFormPage /></Guard>} />

@@ -46,3 +46,11 @@ Legend: ✅ run during development (see notes) · ☐ run it yourself after depl
 - ☐ 768px tablet: navigation rail. 1280px desktop: expanded rail.
 - ☐ Light, dark and system themes persist after reload; accent color change updates all pages.
 - ☐ Every page shows loading, empty and error states (stop the API to see errors).
+
+## Public class page
+- ☐ With `public.enabled` off, `/#/` shows "Halaman belum aktif" and `GET /public/feed` returns 404.
+- ☐ Turn it on in Settings: logged-out visitors see `/#/` with today's, upcoming and previous reminders; drafts never appear.
+- ☐ The page and `/public/feed` contain no recipients, phone numbers or admin names.
+- ☐ Enable notifications as a visitor; schedule a reminder 2 minutes ahead; the notification arrives and opens the page.
+- ☐ A device that is also an admin device gets one notification, not two.
+- ☐ An emergency announcement is pinned on top for 3 days.

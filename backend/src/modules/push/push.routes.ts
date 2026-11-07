@@ -30,6 +30,7 @@ pushRouter.post('/subscribe', requirePermission('reminders.read'), validate({ bo
      ON CONFLICT (endpoint) DO UPDATE SET admin_id = EXCLUDED.admin_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth, user_agent = EXCLUDED.user_agent, last_error = NULL`,
     [req.admin!.id, b.endpoint, b.keys.p256dh, b.keys.auth, req.get('user-agent')?.slice(0, 300) ?? null],
   );
+  await query(`DELETE FROM public_push_subscriptions WHERE endpoint = $1`, [b.endpoint]);
   res.status(204).end();
 }));
 

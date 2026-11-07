@@ -18,6 +18,7 @@ const body = z
     'app.timezone': z.string().refine(isValidTimezone, 'Invalid IANA timezone'),
     'reminder.default_send_time': z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm'),
     'whatsapp.groups_supported': z.boolean(),
+    'public.enabled': z.boolean(),
   })
   .partial()
   .strict();

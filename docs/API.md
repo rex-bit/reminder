@@ -67,3 +67,15 @@ Rules: Owner is immutable; granting is limited to permissions the actor holds; n
 | POST | `/push/test` | sends a test notification to the caller's devices |
 
 Reminder objects include `manual_shares: [{recipient_id, name, done}]`. Reminder statuses: `draft`, `pending`, `due`, `sent`, `failed`, `cancelled`.
+
+## Public class page (no login)
+Off until the Owner enables the `public.enabled` setting (Settings > "Public class page"); otherwise every call returns `404 public_disabled`. Rate limited per IP. Returns no recipients, phone numbers, logs or admin data.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/public/feed` | `{timezone, today, pinned[], upcoming[], recent[]}`. `upcoming` = pending/due/sent reminders from today to +7 days; `recent` = released ones from the last 14 days; `pinned` = emergency notices released in the last 3 days. Drafts, failed and cancelled are never shown. |
+| GET | `/public/push/config` | `{enabled, publicKey}` |
+| POST | `/public/push/subscribe` | body `{endpoint, keys:{p256dh, auth}}` (max 5000 devices) |
+| POST | `/public/push/unsubscribe` | body `{endpoint}` |
+
+When a reminder finishes (`sent` or `due`) the worker sends a web push to every public subscriber (browsers that are also an admin device get only the admin notification).

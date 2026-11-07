@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { settingsApi } from '../api/endpoints';
 import type { AppSettings } from '../api/types';
@@ -45,6 +46,8 @@ function AppSettingsCard({ initial, canEdit, onSaved }: { initial: AppSettings; 
       <TimeField label="Default send time" value={s['reminder.default_send_time']} onChange={(e) => set('reminder.default_send_time', e.target.value)} disabled={!canEdit} />
       <Switch checked={s['whatsapp.groups_supported']} onChange={(v) => set('whatsapp.groups_supported', v)} disabled={!canEdit} label="My WhatsApp business number is eligible for the Groups API" />
       <p className="body-s muted">Leave this off unless Meta has enabled group messaging for your number. Group recipients otherwise use manual sharing.</p>
+      <Switch checked={s['public.enabled']} onChange={(v) => set('public.enabled', v)} disabled={!canEdit} label="Public class page (anyone with the link can see the schedule, no login)" />
+      <p className="body-s muted">Shows released reminders (uniform, schedule, homework, announcements) and lets students turn on notifications. It never shows recipients, phone numbers or logs. <Link to="/home">Open the public page</Link></p>
       {canEdit ? <div><Button loading={busy} onClick={save}>Save settings</Button></div> : <p className="body-s muted">You can view these settings but not change them.</p>}
     </Card>
   );

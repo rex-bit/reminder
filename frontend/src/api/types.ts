@@ -149,6 +149,7 @@ export interface AppSettings {
   'app.timezone': string;
   'app.name': string;
   'whatsapp.groups_supported': boolean;
+  'public.enabled': boolean;
   'reminder.default_send_time': string;
 }
 
@@ -160,3 +161,13 @@ export const EMPTY_CONTENT: ReminderContent = {
   notes: '',
   announcements: '',
 };
+
+/** Read-only reminder as shown on the public class page (no recipients or delivery data). */
+export type PublicReminder = Pick<Reminder, 'id' | 'title' | 'kind' | 'status' | 'reminder_date' | 'content' | 'custom_message' | 'scheduled_at' | 'sent_at' | 'timezone'>;
+export interface PublicFeed {
+  timezone: string;
+  today: string;
+  pinned: PublicReminder[];
+  upcoming: PublicReminder[];
+  recent: PublicReminder[];
+}

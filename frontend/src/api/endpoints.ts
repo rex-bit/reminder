@@ -67,6 +67,10 @@ export const settingsApi = {
   save: (s: Partial<AppSettings>) => api<{ settings: AppSettings }>('/settings', { method: 'PUT', body: s }).then((r) => r.settings),
 };
 
+export const publicApi = {
+  feed: (signal?: AbortSignal) => api<import('./types').PublicFeed>('/public/feed', { signal, auth: false }),
+};
+
 export const authApi = {
   changePassword: (currentPassword: string, newPassword: string) =>
     api<{ accessToken: string }>('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),

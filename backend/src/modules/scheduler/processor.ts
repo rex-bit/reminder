@@ -5,7 +5,8 @@ import { query, withTx, type Db } from '../../db/pool';
 import { buildMessage, type Content } from '../../lib/message';
 import { addToDate, utcToZoned, zonedToUtc } from '../../lib/time';
 import { logActivity } from '../activity/activity.service';
-import { notifyAdmins } from '../push/push.service';
+import { isPublicEnabled, publicNotification } from '../public/public.service';
+import { notifyAdmins, notifyPublic } from '../push/push.service';
 import { dispatch } from './dispatch';
 import type { DeliverJobData } from './queue';
 import { planJob, publishPlan, type Plan } from './schedule';
@@ -161,6 +162,12 @@ async function finalize(rem: ReminderRow, jobRowId: string, ok: boolean, error: 
     await logActivity({ action: ok ? `reminder.${newStatus}` : 'reminder.failed', entityType: 'reminder', entityId: rem.id, metadata: error ? { error } : {} }, undefined, db);
   });
   if (plan) await publishPlan(plan);
+  if (newStatus === 'sent' || newStatus === 'due') {
+    // Everyone who enabled notifications on the public class page.
+    if (await isPublicEnabled().catch(() => false)) {
+      await notifyPublic(publicNotification(rem)).catch((err) => logger.warn({ err }, 'public push failed'));
+    }
+  }
   if (newStatus === 'due') {
     await notifyAdmins('reminders.send', { title: `Perlu dikirim: ${rem.title}`, body: 'Ketuk untuk membuka dan kirim ke WhatsApp.', reminderId: rem.id, tag: `due-${rem.id}` }).catch((err) =>
       logger.warn({ err }, 'push notification failed'),

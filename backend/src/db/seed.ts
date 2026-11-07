@@ -32,6 +32,7 @@ export async function seed(): Promise<void> {
       ['app.name', 'Reminder', 'Display name of the application'],
       ['reminder.default_send_time', '06:00', 'Default send time (HH:mm) in the app timezone'],
       ['whatsapp.groups_supported', false, 'Whether the business number is eligible for the WhatsApp Groups API (verify with Meta first)'],
+      ['public.enabled', false, 'Show the read-only class page (schedule, announcements) to anyone with the link'],
       ['delivery.max_attempts', 5, 'Maximum delivery attempts per recipient'],
     ];
     for (const [key, value, description] of defaults) {

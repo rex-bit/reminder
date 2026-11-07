@@ -16,15 +16,15 @@ self.addEventListener('push', (event) => {
       renotify: Boolean(data.tag),
       icon: 'icons/icon-192.png',
       badge: 'icons/icon-192.png',
-      data: { reminderId: data.reminderId || null },
+      data: { reminderId: data.reminderId || null, path: data.path || null },
     }),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const id = event.notification.data && event.notification.data.reminderId;
-  const url = self.registration.scope + '#/' + (id ? 'reminders/' + id : 'due');
+  const d = event.notification.data || {};
+  const url = self.registration.scope + '#/' + (d.path ? d.path : d.reminderId ? 'reminders/' + d.reminderId : 'due');
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {
