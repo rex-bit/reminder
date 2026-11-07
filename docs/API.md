@@ -49,3 +49,10 @@ Rules: Owner is immutable; granting is limited to permissions the actor holds; n
 - Transient failures (network, 429, 5xx) are retried with exponential backoff up to `DELIVERY_MAX_ATTEMPTS`; other failures fail immediately. `POST /reminders/:id/retry` re-queues only failed deliveries.
 - With `BOT_SERVICE_URL`/`BOT_API_KEY` unset, deliveries fail with `bot_not_configured`. Nothing is simulated.
 - Recurring reminders create the next occurrence as a new pending reminder after a successful send.
+
+## Internal (bot -> backend)
+`POST /internal/whatsapp/statuses` with header `X-API-Key: <BOT_API_KEY>` and body `{ statuses: [{ waMessageId, status: sent|delivered|read|failed, timestamp, errorCode?, errorMessage? }] }` -> `{ received, applied }`. Not callable with admin tokens.
+
+## Bot service API (backend -> bot)
+`POST /v1/messages` (`X-API-Key`, `Idempotency-Key`) `{ deliveryId, idempotencyKey, body, recipient: { type, phone_e164, wa_group_id } }` -> `202 { messageId }` or `4xx/5xx { error }`. 503 and 429 mean retryable.
+`GET /webhook` (Meta verification), `POST /webhook` (signed by Meta), `GET /healthz`.

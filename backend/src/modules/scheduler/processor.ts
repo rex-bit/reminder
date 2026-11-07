@@ -94,10 +94,17 @@ export async function processDelivery(job: Job<DeliverJobData>): Promise<void> {
     return;
   }
 
+  const groupsOn = (await query<{ value: unknown }>(`SELECT value FROM app_settings WHERE key = 'whatsapp.groups_supported'`)).rows[0]?.value === true;
+
   for (const d of pending.rows) {
-    const res = await dispatch({
+    // Groups need an eligible number (Official Business Account, Cloud API number); off unless an admin confirmed it in Settings.
+    const res = d.type === 'group' && !groupsOn
+      ? ({ ok: false, retryable: false, code: 'groups_not_supported', message: 'Group messaging is not enabled for this WhatsApp number. Use manual sharing for groups.' } as const)
+      : await dispatch({
       deliveryId: d.id,
-      idempotencyKey: d.idempotency_key,
+      // Same job (BullMQ retries after a lost response) => same key => the bot drops the duplicate.
+      // A manual "Retry failed" creates a new job row => new key => the message is really re-sent.
+      idempotencyKey: `${d.idempotency_key}:${jobRowId}`,
       body: d.message_body,
       recipient: { type: d.type, phone_e164: d.phone_e164, wa_group_id: d.wa_group_id },
     });
