@@ -1,5 +1,6 @@
 /** Indonesian translations (key = exact English text passed to t()). */
 export const idCore: Record<string, string> = {
+  'Cannot reach the server. Check your connection and the API URL.': 'Tidak bisa menghubungi server. Periksa koneksi internet dan alamat API.',
   'Loading': 'Memuat',
   'Dismiss': 'Tutup',
   'draft': 'Draf',

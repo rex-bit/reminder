@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { Admin } from './types';
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? 'http://localhost:4000/api/v1';
@@ -94,7 +95,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
     }
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err;
-    throw new ApiError(0, 'network_error', 'Cannot reach the server. Check your connection and the API URL.');
+    throw new ApiError(0, 'network_error', t('Cannot reach the server. Check your connection and the API URL.'));
   }
 
   if (!res.ok) throw await parseError(res);
