@@ -19,6 +19,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+html { background: var(--md-background); }
 body {
   margin: 0;
   font-family: var(--font);
@@ -58,7 +59,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Layout shell */
 .shell { display: flex; min-height: 100%; }
-.shell-main { flex: 1; min-width: 0; padding: 16px 16px calc(var(--bar-h) + 24px); }
+.shell-main { flex: 1; min-width: 0; padding: 16px 16px calc(var(--bar-h) + 96px); } /* extra room so the floating New button never covers the last row */
 .page { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 .page-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .page-head h1 { flex: 1; min-width: 160px; }
@@ -312,3 +313,14 @@ tr:last-child td { border-bottom: 0; }
 .pager { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 .split { display: grid; gap: 20px; grid-template-columns: 1fr; }
 @media (min-width: 900px) { .split { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; } .split .sticky { position: sticky; top: 24px; } }
+
+/* Phones: tables that opt in (class "rt") become stacked cards instead of scrolling sideways. */
+@media (max-width: 599px) {
+  table.rt { min-width: 0; }
+  table.rt thead { display: none; }
+  table.rt tr { display: block; padding: 12px 16px; border-bottom: 1px solid var(--md-outline-variant); }
+  table.rt tr:last-child { border-bottom: 0; }
+  table.rt td { display: block; padding: 2px 0; border: 0; }
+  table.rt td[data-label]::before { content: attr(data-label) ': '; color: var(--md-on-surface-variant); font-size: 12px; }
+  table.rt td:last-child { padding-top: 6px; }
+}

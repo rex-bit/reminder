@@ -47,7 +47,7 @@ export function manualShareUrl(message: string): string {
 export function fmtDateTime(iso: string | null | undefined, tz?: string): string {
   if (!iso) return '—';
   try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: tz }).format(new Date(iso));
+    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: tz }).format(new Date(iso));
   } catch {
     return iso;
   }

@@ -67,7 +67,9 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
       </div>
 
       <div className="row">
-        <TextField className="grow" label="Search title" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} style={{ minWidth: 200 }} />
+        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <TextField label="Search title" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        </div>
         <Segmented label="Kind" value={kind} onChange={(v) => { setKind(v); setPage(1); }} options={[{ value: 'all', label: 'All' }, { value: 'daily', label: 'Daily' }, { value: 'emergency', label: 'Emergency' }]} />
       </div>
       <div className="chips" role="group" aria-label="Status filter">
@@ -82,7 +84,7 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
         {(d) => (
           <>
             <div className="table-wrap">
-              <table>
+              <table className="rt">
                 <thead>
                   <tr>
                     <th>Title</th>
@@ -102,8 +104,8 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
                           {r.recurrence !== 'none' && <span className="body-s muted">Repeats {r.recurrence}</span>}
                         </div>
                       </td>
-                      <td>{longDate(r.reminder_date)}</td>
-                      <td>{fmtDateTime(mode === 'scheduled' ? r.scheduled_at : r.sent_at ?? r.scheduled_at, r.timezone)}</td>
+                      <td data-label="Tanggal">{longDate(r.reminder_date)}</td>
+                      <td data-label={mode === 'scheduled' ? 'Kirim' : 'Terkirim'}>{fmtDateTime(mode === 'scheduled' ? r.scheduled_at : r.sent_at ?? r.scheduled_at, r.timezone)}</td>
                       <td><Badge status={r.status}>{LABEL[r.status]}</Badge></td>
                       <td>
                         <div className="row" style={{ gap: 0, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>

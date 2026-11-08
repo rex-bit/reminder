@@ -22,8 +22,8 @@ function Row({ r }: { r: Reminder }) {
       <div className="grow" style={{ minWidth: 0 }}>
         <div className="title-s">{r.title}</div>
         <div className="body-s muted">
-          {longDate(r.reminder_date)}
-          {r.scheduled_at ? ` · ${fmtDateTime(r.scheduled_at, r.timezone)}` : ''}
+          {r.status === 'sent' && r.sent_at ? `Terkirim ${fmtDateTime(r.sent_at, r.timezone)}` : longDate(r.reminder_date)}
+          {r.status !== 'sent' && r.scheduled_at ? ` · ${fmtDateTime(r.scheduled_at, r.timezone)}` : ''}
         </div>
       </div>
       {r.kind === 'emergency' && <Badge status="emergency">Emergency</Badge>}

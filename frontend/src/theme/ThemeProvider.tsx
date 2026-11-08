@@ -53,6 +53,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     for (const [k, v] of Object.entries(scheme)) root.style.setProperty(`--md-${k}`, v);
     root.style.colorScheme = resolved;
+    // The page behind/around the app (iOS overscroll, safe areas) must follow the theme, not the value chosen at first load.
+    root.style.backgroundColor = scheme.background ?? scheme.surface ?? '';
     root.dataset.theme = resolved;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', scheme.surface ?? '#ffffff');
   }, [seed, resolved]);

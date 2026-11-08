@@ -177,7 +177,7 @@ export function PublicHomePage() {
   const disabled = feed.error && feed.error.toLowerCase().includes('not enabled');
 
   return (
-    <div className="page" style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div className="page" style={{ maxWidth: 720, margin: '0 auto', padding: '16px 16px 48px' }}>
       <div className="page-head">
         <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" width={44} height={44} style={{ borderRadius: 12 }} />
         <div className="grow">
