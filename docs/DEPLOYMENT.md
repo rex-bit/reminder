@@ -1,5 +1,7 @@
 # Deployment
 
+> Setup khusus VPS Pterodactyl + Neon + Vercel (`api.classreminder.my.id`): lihat [VPS-PTERODACTYL.md](VPS-PTERODACTYL.md).
+
 ```
 Vercel (static frontend, HTTPS)
         │  A) direct to https://api.example.com   or   B) /api/* rewrite proxied by Vercel

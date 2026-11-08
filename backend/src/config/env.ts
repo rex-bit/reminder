@@ -8,6 +8,8 @@ const schema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(4000),
+    // Interface to bind. 0.0.0.0 is required inside a Pterodactyl container (127.0.0.1 would be unreachable from the host).
+    HOST: z.string().default('0.0.0.0'),
     LOG_LEVEL: z.string().default('info'),
     TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 

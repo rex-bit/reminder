@@ -6,7 +6,7 @@ import { startScheduler, stopScheduler } from './modules/scheduler';
 
 async function main() {
   const app = createApp();
-  const server = app.listen(env.PORT, () => logger.info({ port: env.PORT }, 'API listening'));
+  const server = app.listen(env.PORT, env.HOST, () => logger.info({ host: env.HOST, port: env.PORT }, 'API listening'));
 
   // Scheduling failures (e.g. Redis down) must not stop the API from serving; reconcile retries every minute.
   startScheduler().catch((err) => logger.error({ err }, 'scheduler failed to start'));
