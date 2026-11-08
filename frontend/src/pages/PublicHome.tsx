@@ -179,6 +179,7 @@ export function PublicHomePage() {
   return (
     <div className="page" style={{ maxWidth: 720, margin: '0 auto' }}>
       <div className="page-head">
+        <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" width={44} height={44} style={{ borderRadius: 12 }} />
         <div className="grow">
           <h1 className="headline-m">Info Kelas</h1>
           <p className="body-m muted">Jadwal, seragam, PR, dan pengumuman</p>

@@ -1,3 +1,5 @@
+<p align="center"><img src="frontend/public/logo.svg" width="96" alt="Reminder logo"></p>
+
 # Reminder System + WhatsApp Bot
 
 Personal project: reminder management for admins, with scheduled delivery through the official WhatsApp Business Platform (Cloud API).
