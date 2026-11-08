@@ -381,6 +381,7 @@ tr:last-child td { border-bottom: 0; }
 .pcard.emergency { background: var(--md-error-container); color: var(--md-on-error-container); }
 .pcard.emergency .muted { color: inherit; opacity: 0.8; }
 .pcard.emergency .ticon { background: color-mix(in srgb, var(--md-error) 25%, transparent); }
+.pcard.emergency .btn-text { color: var(--md-error); } /* copy + share buttons on emergency notices are red */
 .tabs { display: flex; border-bottom: 1px solid var(--md-outline-variant); }
 .tab {
   position: relative; flex: 1; height: 48px; border: 0; background: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
