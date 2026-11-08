@@ -9,7 +9,9 @@ export async function isPublicEnabled(): Promise<boolean> {
 
 export async function appTimezone(): Promise<string> {
   const r = await query<{ value: unknown }>(`SELECT value FROM app_settings WHERE key = 'app.timezone'`);
-  return typeof r.rows[0]?.value === 'string' ? (r.rows[0].value as string) : 'UTC';
+  const v = r.rows[0]?.value;
+  if (typeof v !== 'string') return 'UTC';
+  try { new Intl.DateTimeFormat('en', { timeZone: v }); return v; } catch { return 'UTC'; }
 }
 
 /** What a student sees in the notification: short, no recipients, no internal ids beyond the reminder. */
