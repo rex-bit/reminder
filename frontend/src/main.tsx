@@ -5,7 +5,10 @@ import { App } from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { OverlayProvider } from './ui/overlay';
+import { initRipple } from './ui/ripple';
 import './styles/global.css';
+
+initRipple();
 
 // HashRouter: works on GitHub Pages (static hosting) without server-side rewrites.
 createRoot(document.getElementById('root')!).render(
