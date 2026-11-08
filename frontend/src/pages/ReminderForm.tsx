@@ -11,6 +11,7 @@ import { useOverlay } from '../ui/overlay';
 import { ErrorState, LoadingList } from '../ui/states';
 import { ContentEditor } from '../ui/ContentEditor';
 import { ScheduleDialog } from './ScheduleDialog';
+import { t } from '../i18n';
 
 const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -73,12 +74,12 @@ export function ReminderFormPage() {
 
   function validate(forSchedule: boolean): boolean {
     const e: Record<string, string> = {};
-    if (!title.trim()) e.title = 'Title is required';
-    else if (title.length > 160) e.title = 'Max 160 characters';
-    if (!date) e.date = 'Date is required';
-    if (recurrence !== 'none' && until && until < date) e.until = 'Must be on or after the reminder date';
-    if (forSchedule && rids.length === 0) e.recipients = 'Choose at least one recipient to schedule';
-    if (custom !== null && !custom.trim()) e.custom = 'Custom message cannot be empty';
+    if (!title.trim()) e.title = t('Title is required');
+    else if (title.length > 160) e.title = t('Max 160 characters');
+    if (!date) e.date = t('Date is required');
+    if (recurrence !== 'none' && until && until < date) e.until = t('Must be on or after the reminder date');
+    if (forSchedule && rids.length === 0) e.recipients = t('Choose at least one recipient to schedule');
+    if (custom !== null && !custom.trim()) e.custom = t('Custom message cannot be empty');
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -95,7 +96,7 @@ export function ReminderFormPage() {
       const saved = id ? await remindersApi.update(id, body) : await remindersApi.create(body);
       if (forSchedule) setScheduling(saved);
       else {
-        notify('Draft saved');
+        notify(t('Draft saved'));
         nav(`/reminders/${saved.id}`);
       }
     } catch (e) {
@@ -107,17 +108,17 @@ export function ReminderFormPage() {
 
   function applyTemplate(tid: string) {
     setTemplateId(tid);
-    const t = templates.data?.find((x) => x.id === tid);
-    if (!t) return;
-    setContent({ ...EMPTY_CONTENT, ...t.content });
-    setCustom(t.message_body ?? null);
-    notify(`Template “${t.name}” applied`);
+    const tpl = templates.data?.find((x) => x.id === tid);
+    if (!tpl) return;
+    setContent({ ...EMPTY_CONTENT, ...tpl.content });
+    setCustom(tpl.message_body ?? null);
+    notify(t('Template “{name}” applied', { name: tpl.name }));
   }
 
   if (id && existing.loading && !existing.data) return <div className="page"><LoadingList /></div>;
   if (id && existing.error) return <div className="page"><ErrorState message={existing.error} onRetry={existing.reload} /></div>;
   if (existing.data && !['draft', 'pending', 'failed'].includes(existing.data.status)) {
-    return <div className="page"><div className="banner">This reminder is {existing.data.status} and can no longer be edited. Duplicate it to make a new one.</div></div>;
+    return <div className="page"><div className="banner">{t('This reminder is {status} and can no longer be edited. Duplicate it to make a new one.', { status: existing.data.status })}</div></div>;
   }
 
   const activeRecipients = (recipients.data ?? []).filter((r) => r.is_active);
@@ -125,24 +126,24 @@ export function ReminderFormPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="headline-m">{id ? 'Edit reminder' : kind === 'emergency' ? 'Emergency announcement' : 'Create reminder'}</h1>
+        <h1 className="headline-m">{id ? t('Edit reminder') : kind === 'emergency' ? t('Emergency announcement') : t('Create reminder')}</h1>
       </div>
       {formError && <div className="banner error" role="alert">{formError}</div>}
 
       <div className="split">
         <div className="stack">
           <Card variant="outlined">
-            <Segmented<ReminderKind> label="Reminder kind" value={kind} onChange={setKind} options={[{ value: 'daily', label: 'Daily', icon: 'schedule' }, { value: 'emergency', label: 'Emergency', icon: 'campaign' }]} />
-            <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} error={errors.title} maxLength={160} />
+            <Segmented<ReminderKind> label={t('Reminder kind')} value={kind} onChange={setKind} options={[{ value: 'daily', label: t('Daily'), icon: 'schedule' }, { value: 'emergency', label: t('Emergency'), icon: 'campaign' }]} />
+            <TextField label={t('Title')} value={title} onChange={(e) => setTitle(e.target.value)} error={errors.title} maxLength={160} />
             <div className="editor-grid">
-              <DateField label="Reminder date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />
-              <SelectField label="Timezone" value={tz} onChange={(e) => setTz(e.target.value)}>
+              <DateField label={t('Reminder date')} value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />
+              <SelectField label={t('Timezone')} value={tz} onChange={(e) => setTz(e.target.value)}>
                 {(TIMEZONES.includes(tz) ? TIMEZONES : [tz, ...TIMEZONES]).map((z) => <option key={z}>{z}</option>)}
               </SelectField>
             </div>
             {can('templates.read') && (
-              <SelectField label="Start from template" value={templateId} onChange={(e) => applyTemplate(e.target.value)} help="Replaces the content below">
-                <option value="">None</option>
+              <SelectField label={t('Start from template')} value={templateId} onChange={(e) => applyTemplate(e.target.value)} help={t('Replaces the content below')}>
+                <option value="">{t('None')}</option>
                 {(templates.data ?? []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </SelectField>
             )}
@@ -151,14 +152,14 @@ export function ReminderFormPage() {
           <ContentEditor content={content} onChange={setContent} />
 
           <Card variant="outlined">
-            <h3 className="title-m">Recipients</h3>
+            <h3 className="title-m">{t('Recipients')}</h3>
             {recipients.loading ? <LoadingList rows={2} /> : recipients.error ? <ErrorState message={recipients.error} onRetry={recipients.reload} /> : activeRecipients.length === 0 ? (
-              <p className="body-m muted">No active recipients yet. Add some on the Recipients page.</p>
+              <p className="body-m muted">{t('No active recipients yet. Add some on the Recipients page.')}</p>
             ) : (
               <div className="perm-group">
                 {activeRecipients.map((r) => (
                   <Checkbox key={r.id} checked={rids.includes(r.id)} onChange={(v) => setRids((x) => (v ? [...x, r.id] : x.filter((y) => y !== r.id)))}
-                    label={<>{r.name} <span className="body-s muted">· {r.channel === 'manual_share' ? 'you get a notification and send it yourself' : r.type === 'group' ? 'WhatsApp group' : r.phone_e164}</span></>} />
+                    label={<>{r.name} <span className="body-s muted">· {r.channel === 'manual_share' ? t('you get a notification and send it yourself') : r.type === 'group' ? t('WhatsApp group') : r.phone_e164}</span></>} />
                 ))}
               </div>
             )}
@@ -166,15 +167,15 @@ export function ReminderFormPage() {
           </Card>
 
           <Card variant="outlined">
-            <h3 className="title-m">Recurrence</h3>
+            <h3 className="title-m">{t('Recurrence')}</h3>
             <div className="editor-grid">
-              <SelectField label="Repeat" value={recurrence} onChange={(e) => setRecurrence(e.target.value as Recurrence)}>
-                <option value="none">Does not repeat</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
+              <SelectField label={t('Repeat')} value={recurrence} onChange={(e) => setRecurrence(e.target.value as Recurrence)}>
+                <option value="none">{t('Does not repeat')}</option>
+                <option value="daily">{t('Daily')}</option>
+                <option value="weekly">{t('Weekly')}</option>
+                <option value="monthly">{t('Monthly')}</option>
               </SelectField>
-              {recurrence !== 'none' && <DateField label="Repeat until (optional)" value={until} onChange={(e) => setUntil(e.target.value)} error={errors.until} />}
+              {recurrence !== 'none' && <DateField label={t('Repeat until (optional)')} value={until} onChange={(e) => setUntil(e.target.value)} error={errors.until} />}
             </div>
           </Card>
         </div>
@@ -182,24 +183,24 @@ export function ReminderFormPage() {
         <div className="stack sticky">
           <Card variant="elevated">
             <div className="row">
-              <h3 className="title-m grow">Message preview</h3>
-              <Switch checked={custom !== null} onChange={(v) => setCustom(v ? generated : null)} label="Customize" />
+              <h3 className="title-m grow">{t('Message preview')}</h3>
+              <Switch checked={custom !== null} onChange={(v) => setCustom(v ? generated : null)} label={t('Customize')} />
             </div>
             {custom !== null ? (
               <>
-                <TextArea label="Message text" value={custom} onChange={(e) => setCustom(e.target.value)} rows={14} error={errors.custom} help="Sent exactly as written. Turn Customize off to regenerate from the fields." />
-                <Button variant="text" onClick={() => setCustom(generated)}>Reset to generated text</Button>
+                <TextArea label={t('Message text')} value={custom} onChange={(e) => setCustom(e.target.value)} rows={14} error={errors.custom} help={t('Sent exactly as written. Turn Customize off to regenerate from the fields.')} />
+                <Button variant="text" onClick={() => setCustom(generated)}>{t('Reset to generated text')}</Button>
               </>
             ) : (
-              <div className="bubble" aria-label="Message preview">{message}</div>
+              <div className="bubble" aria-label={t('Message preview')}>{message}</div>
             )}
-            <p className="body-s muted">Preview only. Real delivery status appears after sending.</p>
+            <p className="body-s muted">{t('Preview only. Real delivery status appears after sending.')}</p>
           </Card>
           <div className="row">
-            <Button variant="outlined" onClick={() => nav(-1)}>Cancel</Button>
+            <Button variant="outlined" onClick={() => nav(-1)}>{t('Cancel')}</Button>
             <span className="grow" />
-            <Button variant="tonal" loading={busy === 'draft'} disabled={!!busy} onClick={() => save(false)}>Save draft</Button>
-            {can('schedule.manage') && <Button loading={busy === 'schedule'} disabled={!!busy} icon="schedule" onClick={() => save(true)}>Save &amp; schedule</Button>}
+            <Button variant="tonal" loading={busy === 'draft'} disabled={!!busy} onClick={() => save(false)}>{t('Save draft')}</Button>
+            {can('schedule.manage') && <Button loading={busy === 'schedule'} disabled={!!busy} icon="schedule" onClick={() => save(true)}>{t('Save & schedule')}</Button>}
           </div>
         </div>
       </div>

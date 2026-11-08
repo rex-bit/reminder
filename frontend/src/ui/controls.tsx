@@ -1,6 +1,7 @@
 import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { t } from '../i18n';
 
 type Variant = 'filled' | 'tonal' | 'outlined' | 'text' | 'danger';
 
@@ -19,7 +20,7 @@ export function Button({ variant = 'filled', icon, loading, danger, className = 
       disabled={disabled || loading}
       className={`btn btn-${variant} ${danger ? 'danger' : ''} ${!children ? 'icon-only' : ''} ${className}`}
     >
-      {loading ? <span className="spinner" role="status" aria-label="Loading" /> : icon ? <Icon name={icon} size={18} /> : null}
+      {loading ? <span className="spinner" role="status" aria-label={t('Loading')} /> : icon ? <Icon name={icon} size={18} /> : null}
       {children}
     </button>
   );
@@ -153,7 +154,7 @@ export function FilterChip({ selected, onClick, children }: { selected: boolean;
 }
 
 export function Badge({ status, children }: { status?: string; children?: ReactNode }) {
-  return <span className={`badge ${status ? `s-${status}` : ''}`}>{children ?? status}</span>;
+  return <span className={`badge ${status ? `s-${status}` : ''}`}>{children ?? (status ? t(status) : status)}</span>;
 }
 
 export function Card({ variant = 'filled', className = '', children, onClick }: { variant?: 'filled' | 'elevated' | 'outlined' | 'tonal-primary'; className?: string; children: ReactNode; onClick?(): void }) {

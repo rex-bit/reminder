@@ -10,6 +10,7 @@ import { Badge, Button, Card } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 import { useOverlay } from '../ui/overlay';
 import { AsyncView, EmptyState } from '../ui/states';
+import { t } from '../i18n';
 
 function DueCard({ r, onDone }: { r: Reminder; onDone(): void }) {
   const { can } = useAuth();
@@ -21,18 +22,18 @@ function DueCard({ r, onDone }: { r: Reminder; onDone(): void }) {
   async function copy() {
     try {
       await navigator.clipboard.writeText(message);
-      notify('Message copied');
+      notify(t('Message copied'));
     } catch {
-      notify('Could not copy. Select the text and copy it manually.', { kind: 'error' });
+      notify(t('Could not copy. Select the text and copy it manually.'), { kind: 'error' });
     }
   }
 
   async function markSent() {
-    if (!(await confirm({ title: 'Mark as sent?', body: `Confirm that you already sent “${r.title}” on WhatsApp. This only records it; the system cannot check.`, confirmLabel: 'Yes, I sent it' }))) return;
+    if (!(await confirm({ title: t('Mark as sent?'), body: t('Confirm that you already sent “{title}” on WhatsApp. This only records it; the system cannot check.', { title: r.title }), confirmLabel: t('Yes, I sent it') }))) return;
     setBusy(true);
     try {
       await remindersApi.markSent(r.id);
-      notify('Marked as sent');
+      notify(t('Marked as sent'));
       onDone();
     } catch (e) {
       notify(errorMessage(e), { kind: 'error' });
@@ -46,22 +47,22 @@ function DueCard({ r, onDone }: { r: Reminder; onDone(): void }) {
       <div className="row">
         <div className="grow" style={{ minWidth: 0 }}>
           <Link to={`/reminders/${r.id}`} className="title-m" style={{ textDecoration: 'none' }}>{r.title}</Link>
-          <div className="body-s muted">{longDate(r.reminder_date)} · due {fmtDateTime(r.scheduled_at, r.timezone)}</div>
+          <div className="body-s muted">{t('{date} · due {time}', { date: longDate(r.reminder_date), time: fmtDateTime(r.scheduled_at, r.timezone) })}</div>
         </div>
-        {r.kind === 'emergency' && <Badge status="emergency">Emergency</Badge>}
-        <Badge status="due">To send</Badge>
+        {r.kind === 'emergency' && <Badge status="emergency">{t('Emergency')}</Badge>}
+        <Badge status="due">{t('To send')}</Badge>
       </div>
-      <div className="body-m">Send to: <strong>{targets.join(', ') || '—'}</strong></div>
+      <div className="body-m">{t('Send to:')} <strong>{targets.join(', ') || '—'}</strong></div>
       <div className="bubble">{message}</div>
       <div className="row">
         <a className="btn btn-filled" href={manualShareUrl(message)} target="_blank" rel="noopener noreferrer">
           <Icon name="share" size={18} />
-          Open WhatsApp
+          {t('Open WhatsApp')}
         </a>
-        <Button variant="outlined" icon="copy" onClick={copy}>Copy text</Button>
-        {can('reminders.send') && <Button variant="tonal" icon="check" loading={busy} onClick={markSent}>Mark as sent</Button>}
+        <Button variant="outlined" icon="copy" onClick={copy}>{t('Copy text')}</Button>
+        {can('reminders.send') && <Button variant="tonal" icon="check" loading={busy} onClick={markSent}>{t('Mark as sent')}</Button>}
       </div>
-      <p className="body-s muted">WhatsApp opens with this text. Pick the group, tag everyone if you want, and press send. Then come back and mark it as sent.</p>
+      <p className="body-s muted">{t('WhatsApp opens with this text. Pick the group, tag everyone if you want, and press send. Then come back and mark it as sent.')}</p>
     </Card>
   );
 }
@@ -72,12 +73,12 @@ export function DuePage() {
     <div className="page">
       <div className="page-head">
         <div className="grow">
-          <h1 className="headline-m">To send</h1>
-          <p className="body-m muted">Reminders that reached their time and are waiting for you to send them on WhatsApp.</p>
+          <h1 className="headline-m">{t('To send')}</h1>
+          <p className="body-m muted">{t('Reminders that reached their time and are waiting for you to send them on WhatsApp.')}</p>
         </div>
-        <Button variant="text" icon="refresh" onClick={state.reload}>Refresh</Button>
+        <Button variant="text" icon="refresh" onClick={state.reload}>{t('Refresh')}</Button>
       </div>
-      <AsyncView state={state} isEmpty={(d) => d.items.length === 0} empty={<EmptyState icon="check" title="Nothing to send" hint="You will get a notification when a scheduled reminder is ready." />}>
+      <AsyncView state={state} isEmpty={(d) => d.items.length === 0} empty={<EmptyState icon="check" title={t('Nothing to send')} hint={t('You will get a notification when a scheduled reminder is ready.')} />}>
         {(d) => <div className="stack">{d.items.map((r) => <DueCard key={r.id} r={r} onDone={state.reload} />)}</div>}
       </AsyncView>
     </div>

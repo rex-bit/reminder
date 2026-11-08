@@ -1,4 +1,5 @@
 import { api } from '../api/client';
+import { t } from '../i18n';
 
 const BASE = import.meta.env.BASE_URL ?? '/';
 
@@ -37,9 +38,9 @@ export async function getPushState(): Promise<{ state: PushState; devices: numbe
 
 export async function enablePush(): Promise<void> {
   const cfg = await api<{ enabled: boolean; publicKey: string | null }>('/push/config');
-  if (!cfg.enabled || !cfg.publicKey) throw new Error('Push notifications are not configured on the server.');
+  if (!cfg.enabled || !cfg.publicKey) throw new Error(t('Push notifications are not configured on the server.'));
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Notification permission was not granted. Allow notifications for this site in your browser settings.');
+  if (permission !== 'granted') throw new Error(t('Notification permission was not granted. Allow notifications for this site in your browser settings.'));
   const reg = await registration();
   await navigator.serviceWorker.ready;
   const sub =
@@ -73,7 +74,7 @@ export async function getPublicPushState(): Promise<PushState> {
 
 export async function enablePublicPush(): Promise<void> {
   const cfg = await api<{ enabled: boolean; publicKey: string | null }>('/public/push/config', { auth: false });
-  if (!cfg.enabled || !cfg.publicKey) throw new Error('Notifications are not available right now.');
+  if (!cfg.enabled || !cfg.publicKey) throw new Error(t('Notifications are not available right now.'));
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new Error('Notifikasi tidak diizinkan. Izinkan notifikasi untuk situs ini di pengaturan browser/HP.');
   const reg = await registration();

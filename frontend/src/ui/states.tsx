@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { Button } from './controls';
 import { Icon, type IconName } from './Icon';
+import { t } from '../i18n';
 
 export function LoadingList({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="stack" aria-busy="true" aria-label="Loading">
+    <div className="stack" aria-busy="true" aria-label={t('Loading')}>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="skeleton" style={{ height: 64 }} />
       ))}
@@ -27,11 +28,11 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?(): 
   return (
     <div className="state error" role="alert">
       <Icon name="error" />
-      <div className="title-m">Something went wrong</div>
+      <div className="title-m">{t('Something went wrong')}</div>
       <div className="body-m muted">{message}</div>
       {onRetry && (
         <Button variant="tonal" icon="refresh" onClick={onRetry}>
-          Try again
+          {t('Try again')}
         </Button>
       )}
     </div>

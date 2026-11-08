@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../i18n';
 import { logsApi } from '../api/endpoints';
 import type { DeliveryStatus } from '../api/types';
 import { fmtDateTime } from '../lib/format';
@@ -16,17 +17,17 @@ export function DeliveryLogsPage() {
 
   return (
     <div className="page">
-      <h1 className="headline-m">Delivery logs</h1>
-      <p className="body-m muted">Statuses are recorded from the WhatsApp Cloud API responses and webhooks. Nothing here is simulated.</p>
-      <div className="chips" role="group" aria-label="Status filter">
+      <h1 className="headline-m">{t('Delivery logs')}</h1>
+      <p className="body-m muted">{t('Statuses are recorded from the WhatsApp Cloud API responses and webhooks. Nothing here is simulated.')}</p>
+      <div className="chips" role="group" aria-label={t('Status filter')}>
         {STATUSES.map((s) => <FilterChip key={s} selected={status === s} onClick={() => { setStatus(status === s ? null : s); setPage(1); }}>{s}</FilterChip>)}
       </div>
-      <AsyncView state={state} isEmpty={(d) => d.items.length === 0} empty={<EmptyState icon="mail" title="No delivery logs" hint={status ? 'No logs with this status.' : 'Logs appear after reminders are sent.'} />}>
+      <AsyncView state={state} isEmpty={(d) => d.items.length === 0} empty={<EmptyState icon="mail" title={t('No delivery logs')} hint={status ? t('No logs with this status.') : t('Logs appear after reminders are sent.')} />}>
         {(d) => (
           <>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Reminder</th><th>Recipient</th><th>Status</th><th>Attempt</th><th>Time</th><th>Error</th></tr></thead>
+                <thead><tr><th>{t('Reminder')}</th><th>{t('Recipient')}</th><th>{t('Status')}</th><th>{t('Attempt')}</th><th>{t('Time')}</th><th>{t('Error')}</th></tr></thead>
                 <tbody>
                   {d.items.map((l) => (
                     <tr key={l.id}>

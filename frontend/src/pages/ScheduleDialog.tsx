@@ -5,6 +5,7 @@ import type { Reminder } from '../api/types';
 import { isoToZoned, todayIso, zonedToIso } from '../lib/format';
 import { Button, DateField, TimeField } from '../ui/controls';
 import { Dialog, useOverlay } from '../ui/overlay';
+import { t } from '../i18n';
 
 /** Schedule (draft -> pending) or reschedule (pending -> pending). Times are wall-clock in the reminder's timezone. */
 export function ScheduleDialog({ reminder, onClose, onDone }: { reminder: Reminder; onClose(): void; onDone(): void }) {
@@ -24,7 +25,7 @@ export function ScheduleDialog({ reminder, onClose, onDone }: { reminder: Remind
     setError(null);
     try {
       await remindersApi.schedule(reminder.id, iso);
-      notify(reminder.status === 'pending' ? 'Reminder rescheduled' : 'Reminder scheduled');
+      notify(reminder.status === 'pending' ? t('Reminder rescheduled') : t('Reminder scheduled'));
       onDone();
     } catch (e) {
       setError(errorMessage(e));
@@ -35,26 +36,26 @@ export function ScheduleDialog({ reminder, onClose, onDone }: { reminder: Remind
 
   return (
     <Dialog
-      title={reminder.status === 'pending' ? 'Reschedule reminder' : 'Schedule reminder'}
+      title={reminder.status === 'pending' ? t('Reschedule reminder') : t('Schedule reminder')}
       onClose={onClose}
       actions={
         <>
           <Button variant="text" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button onClick={save} loading={busy} disabled={!iso || inPast}>
-            Save
+            {t('Save')}
           </Button>
         </>
       }
     >
-      <p className="body-m muted">Sends automatically from the server at this time ({reminder.timezone}); this page does not need to stay open.</p>
+      <p className="body-m muted">{t('Sends automatically from the server at this time ({tz}); this page does not need to stay open.', { tz: reminder.timezone })}</p>
       {error && <div className="banner error" role="alert">{error}</div>}
       <div className="editor-grid">
-        <DateField label="Date" value={date} min={todayIso(reminder.timezone)} onChange={(e) => setDate(e.target.value)} />
-        <TimeField label="Time" value={time} onChange={(e) => setTime(e.target.value)} />
+        <DateField label={t('Date')} value={date} min={todayIso(reminder.timezone)} onChange={(e) => setDate(e.target.value)} />
+        <TimeField label={t('Time')} value={time} onChange={(e) => setTime(e.target.value)} />
       </div>
-      {inPast && <div className="banner">That time is in the past. Choose a future time, or use “Send now”.</div>}
+      {inPast && <div className="banner">{t('That time is in the past. Choose a future time, or use “Send now”.')}</div>}
     </Dialog>
   );
 }

@@ -5,6 +5,7 @@ import { EMPTY_CONTENT, type PublicReminder, type ReminderContent } from '../api
 import { useAuth } from '../auth/AuthProvider';
 import { longDate, todayIso } from '../lib/format';
 import { disablePublicPush, enablePublicPush, getPublicPushState, needsHomeScreenInstall, type PushState } from '../lib/push';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { useAsync } from '../lib/useAsync';
 import { SEED_PRESETS } from '../theme/palette';
 import { useTheme, type ThemeMode } from '../theme/ThemeProvider';
@@ -101,6 +102,7 @@ function AppearanceCard() {
     <details>
       <summary className="title-m" style={{ cursor: 'pointer', padding: '8px 0' }}>🎨 Tampilan &amp; warna</summary>
       <Card variant="outlined">
+        <LanguageSwitch />
         <Segmented<ThemeMode> label="Tema" value={mode} onChange={setMode} options={[{ value: 'light', label: 'Terang' }, { value: 'dark', label: 'Gelap' }, { value: 'system', label: 'Otomatis' }]} />
         <div className="row" role="group" aria-label="Warna aksen">
           {SEED_PRESETS.map((p) => (

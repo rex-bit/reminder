@@ -55,3 +55,7 @@ Legend: ✅ run during development (see notes) · ☐ run it yourself after depl
 - ☐ A device that is also an admin device gets one notification, not two.
 - ☐ An emergency announcement is pinned on top for 3 days.
 - ☐ Logged out, open `/#/admins` or `/#/reminders`: you see "Kamu tidak punya akses", not a login form. `/#/login` shows the form. Calling any panel API without a token returns 401.
+
+## Language
+- ☐ Default is Indonesian. On Login, Settings and the public page, the "Bahasa / Language" switch changes to English and back (the page reloads; the choice is saved on that device).
+- ☐ Click through every admin page in Indonesian: no half-translated labels. Messages that come from the server (some error texts) stay in English.

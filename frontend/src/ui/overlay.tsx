@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './controls';
+import { t } from '../i18n';
 
 function useEscape(onClose: () => void) {
   useEffect(() => {
@@ -96,10 +97,10 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
           actions={
             <>
               <Button variant="text" onClick={() => close(false)}>
-                Cancel
+                {t('Cancel')}
               </Button>
               <Button variant={dlg.danger ? 'danger' : 'filled'} onClick={() => close(true)}>
-                {dlg.confirmLabel ?? 'Confirm'}
+                {dlg.confirmLabel ?? t('Confirm')}
               </Button>
             </>
           }
@@ -113,7 +114,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
             <div key={s.id} className={`snack ${s.kind}`} role={s.kind === 'error' ? 'alert' : 'status'}>
               <span className="grow">{s.message}</span>
               {s.actionLabel && <button onClick={s.onAction}>{s.actionLabel}</button>}
-              <button aria-label="Dismiss" onClick={() => setSnacks((x) => x.filter((n) => n.id !== s.id))}>
+              <button aria-label={t('Dismiss')} onClick={() => setSnacks((x) => x.filter((n) => n.id !== s.id))}>
                 ✕
               </button>
             </div>

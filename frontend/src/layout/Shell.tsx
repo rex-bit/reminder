@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { Fab } from '../ui/controls';
 import { Icon, type IconName } from '../ui/Icon';
 import { BottomSheet } from '../ui/overlay';
+import { t } from '../i18n';
 
 interface Item {
   to: string;
@@ -14,17 +15,17 @@ interface Item {
 }
 
 const ITEMS: Item[] = [
-  { to: '/', label: 'Dashboard', icon: 'dashboard', perm: 'reminders.read', primary: true },
-  { to: '/due', label: 'To send', icon: 'send', perm: 'reminders.read', primary: true },
-  { to: '/scheduled', label: 'Scheduled', icon: 'schedule', perm: 'reminders.read', primary: true },
-  { to: '/history', label: 'History', icon: 'history', perm: 'reminders.read', primary: true },
-  { to: '/templates', label: 'Templates', icon: 'template', perm: 'templates.read' },
-  { to: '/recipients', label: 'Recipients', icon: 'people', perm: 'recipients.read' },
-  { to: '/delivery-logs', label: 'Delivery logs', icon: 'mail', perm: 'logs.delivery' },
-  { to: '/activity', label: 'Activity logs', icon: 'receipt', perm: 'logs.activity' },
-  { to: '/admins', label: 'Admins', icon: 'people', perm: 'admins.read' },
-  { to: '/settings', label: 'Settings', icon: 'settings' },
-  { to: '/profile', label: 'Profile', icon: 'person' },
+  { to: '/', label: t('Dashboard'), icon: 'dashboard', perm: 'reminders.read', primary: true },
+  { to: '/due', label: t('To send'), icon: 'send', perm: 'reminders.read', primary: true },
+  { to: '/scheduled', label: t('Scheduled'), icon: 'schedule', perm: 'reminders.read', primary: true },
+  { to: '/history', label: t('History'), icon: 'history', perm: 'reminders.read', primary: true },
+  { to: '/templates', label: t('Templates'), icon: 'template', perm: 'templates.read' },
+  { to: '/recipients', label: t('Recipients'), icon: 'people', perm: 'recipients.read' },
+  { to: '/delivery-logs', label: t('Delivery logs'), icon: 'mail', perm: 'logs.delivery' },
+  { to: '/activity', label: t('Activity logs'), icon: 'receipt', perm: 'logs.activity' },
+  { to: '/admins', label: t('Admins'), icon: 'people', perm: 'admins.read' },
+  { to: '/settings', label: t('Settings'), icon: 'settings' },
+  { to: '/profile', label: t('Profile'), icon: 'person' },
 ];
 
 function NavItem({ item, onClick }: { item: Item; onClick?(): void }) {
@@ -51,9 +52,9 @@ export function Shell() {
 
   return (
     <div className="shell">
-      <nav className="nav-rail" aria-label="Main">
+      <nav className="nav-rail" aria-label={t('Main')}>
         <div className="nav-rail-title title-m">Reminder</div>
-        {canCreate && <Fab to="/reminders/new" icon="add" label="New" />}
+        {canCreate && <Fab to="/reminders/new" icon="add" label={t('New')} />}
         {items.map((i) => (
           <NavItem key={i.to} item={i} />
         ))}
@@ -65,11 +66,11 @@ export function Shell() {
 
       {canCreate && !onForm && (
         <div className="mobile-fab">
-          <Fab to="/reminders/new" icon="add" label="New" />
+          <Fab to="/reminders/new" icon="add" label={t('New')} />
         </div>
       )}
 
-      <nav className="nav-bar" aria-label="Main">
+      <nav className="nav-bar" aria-label={t('Main')}>
         {bar.map((i) => (
           <NavItem key={i.to} item={i} />
         ))}
@@ -78,13 +79,13 @@ export function Shell() {
             <span className="nav-pill">
               <Icon name="more" />
             </span>
-            <span className="label-m">More</span>
+            <span className="label-m">{t('More')}</span>
           </button>
         )}
       </nav>
 
       {more && (
-        <BottomSheet title={admin?.display_name ?? 'More'} onClose={() => setMore(false)}>
+        <BottomSheet title={admin?.display_name ?? t('More')} onClose={() => setMore(false)}>
           <div className="list">
             {rest.map((i) => (
               <NavLink key={i.to} to={i.to} className="list-item clickable" style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setMore(false)}>

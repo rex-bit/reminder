@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../i18n';
 import { errorMessage } from '../api/client';
 import { templatesApi } from '../api/endpoints';
 import { EMPTY_CONTENT, type ReminderContent, type Template } from '../api/types';
@@ -17,7 +18,7 @@ function TemplateDialog({ initial, onClose, onSaved }: { initial: Template | nul
   const [body, setBody] = useState(initial?.message_body ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const nameError = !name.trim() ? 'Name is required' : undefined;
+  const nameError = !name.trim() ? t('Name is required') : undefined;
 
   async function save() {
     if (nameError) return setError(nameError);
@@ -25,7 +26,7 @@ function TemplateDialog({ initial, onClose, onSaved }: { initial: Template | nul
     setError(null);
     try {
       await templatesApi.save({ id: initial?.id, name: name.trim(), description, content, message_body: body.trim() ? body : null });
-      notify(initial ? 'Template updated' : 'Template created');
+      notify(initial ? t('Template updated') : t('Template created'));
       onSaved();
     } catch (e) {
       setError(errorMessage(e));
@@ -35,12 +36,12 @@ function TemplateDialog({ initial, onClose, onSaved }: { initial: Template | nul
   }
 
   return (
-    <Dialog title={initial ? 'Edit template' : 'New template'} onClose={onClose} actions={<><Button variant="text" onClick={onClose}>Cancel</Button><Button loading={busy} onClick={save}>Save</Button></>}>
+    <Dialog title={initial ? t('Edit template') : t('New template')} onClose={onClose} actions={<><Button variant="text" onClick={onClose}>{t('Cancel')}</Button><Button loading={busy} onClick={save}>{t('Save')}</Button></>}>
       {error && <div className="banner error" role="alert">{error}</div>}
-      <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} error={error && nameError} maxLength={120} />
-      <TextField label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <TextField label={t('Name')} value={name} onChange={(e) => setName(e.target.value)} error={error && nameError} maxLength={120} />
+      <TextField label={t('Description')} value={description} onChange={(e) => setDescription(e.target.value)} />
       <ContentEditor content={content} onChange={setContent} />
-      <TextArea label="Custom message layout (optional)" value={body} onChange={(e) => setBody(e.target.value)} help="If set, reminders from this template start with this exact text instead of the generated one." />
+      <TextArea label={t('Custom message layout (optional)')} value={body} onChange={(e) => setBody(e.target.value)} help={t('If set, reminders from this template start with this exact text instead of the generated one.')} />
     </Dialog>
   );
 }
@@ -52,11 +53,11 @@ export function TemplatesPage() {
   const [editing, setEditing] = useState<Template | 'new' | null>(null);
   const manage = can('templates.manage');
 
-  async function remove(t: Template) {
-    if (!(await confirm({ title: 'Delete template?', body: `“${t.name}” will be deleted. Reminders already created from it are not affected.`, confirmLabel: 'Delete', danger: true }))) return;
+  async function remove(tpl: Template) {
+    if (!(await confirm({ title: t('Delete template?'), body: t('“{name}” will be deleted. Reminders already created from it are not affected.', { name: tpl.name }), confirmLabel: t('Delete'), danger: true }))) return;
     try {
-      await templatesApi.remove(t.id);
-      notify('Template deleted');
+      await templatesApi.remove(tpl.id);
+      notify(t('Template deleted'));
       state.reload();
     } catch (e) {
       notify(errorMessage(e), { kind: 'error' });
@@ -66,21 +67,21 @@ export function TemplatesPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="headline-m">Reminder templates</h1>
-        {manage && <Button icon="add" onClick={() => setEditing('new')}>New template</Button>}
+        <h1 className="headline-m">{t('Reminder templates')}</h1>
+        {manage && <Button icon="add" onClick={() => setEditing('new')}>{t('New template')}</Button>}
       </div>
-      <AsyncView state={state} isEmpty={(d) => d.length === 0} empty={<EmptyState icon="template" title="No templates yet" hint="Templates pre-fill reminders with a standard schedule or layout." action={manage ? <Button onClick={() => setEditing('new')}>Create template</Button> : undefined} />}>
+      <AsyncView state={state} isEmpty={(d) => d.length === 0} empty={<EmptyState icon="template" title={t('No templates yet')} hint={t('Templates pre-fill reminders with a standard schedule or layout.')} action={manage ? <Button onClick={() => setEditing('new')}>{t('Create template')}</Button> : undefined} />}>
         {(items) => (
           <div className="grid cols-auto">
-            {items.map((t) => (
-              <Card key={t.id} variant="outlined">
-                <h2 className="title-m">{t.name}</h2>
-                <p className="body-m muted">{t.description || 'No description'}</p>
-                <p className="body-s muted">{t.content.subjects.length} subjects · {t.content.homework.length} assignments · {t.content.piket.length} duty</p>
+            {items.map((tpl) => (
+              <Card key={tpl.id} variant="outlined">
+                <h2 className="title-m">{tpl.name}</h2>
+                <p className="body-m muted">{tpl.description || t('No description')}</p>
+                <p className="body-s muted">{t('{subjects} subjects · {homework} assignments · {piket} duty', { subjects: tpl.content.subjects.length, homework: tpl.content.homework.length, piket: tpl.content.piket.length })}</p>
                 {manage && (
                   <div className="row" style={{ gap: 0 }}>
-                    <IconButton icon="edit" label="Edit" onClick={() => setEditing(t)} />
-                    <IconButton icon="delete" label="Delete" onClick={() => remove(t)} />
+                    <IconButton icon="edit" label={t('Edit')} onClick={() => setEditing(tpl)} />
+                    <IconButton icon="delete" label={t('Delete')} onClick={() => remove(tpl)} />
                   </div>
                 )}
               </Card>

@@ -10,13 +10,14 @@ import { Badge, Button, FilterChip, IconButton, LinkButton, Segmented, TextField
 import { useOverlay } from '../ui/overlay';
 import { AsyncView, EmptyState } from '../ui/states';
 import { ScheduleDialog } from './ScheduleDialog';
+import { t } from '../i18n';
 
 const MODES = {
-  scheduled: { title: 'Scheduled reminders', statuses: ['pending', 'due', 'failed', 'draft'] as ReminderStatus[], emptyIcon: 'schedule' as const, empty: 'No scheduled reminders', hint: 'Create a reminder and schedule it to see it here.' },
-  history: { title: 'Reminder history', statuses: ['sent', 'failed', 'cancelled'] as ReminderStatus[], emptyIcon: 'history' as const, empty: 'No history yet', hint: 'Reminders that were sent, failed or cancelled appear here.' },
+  scheduled: { title: t('Scheduled reminders'), statuses: ['pending', 'due', 'failed', 'draft'] as ReminderStatus[], emptyIcon: 'schedule' as const, empty: t('No scheduled reminders'), hint: t('Create a reminder and schedule it to see it here.') },
+  history: { title: t('Reminder history'), statuses: ['sent', 'failed', 'cancelled'] as ReminderStatus[], emptyIcon: 'history' as const, empty: t('No history yet'), hint: t('Reminders that were sent, failed or cancelled appear here.') },
 };
 
-const LABEL: Record<ReminderStatus, string> = { pending: 'Scheduled', due: 'To send', failed: 'Failed', draft: 'Draft', sent: 'Sent', cancelled: 'Cancelled' };
+const LABEL: Record<ReminderStatus, string> = { pending: t('Scheduled'), due: t('To send'), failed: t('Failed'), draft: t('Draft'), sent: t('Sent'), cancelled: t('Cancelled') };
 
 export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
   const cfg = MODES[mode];
@@ -49,13 +50,13 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
   }
 
   async function cancel(r: Reminder) {
-    if (await confirm({ title: 'Cancel scheduled reminder?', body: `“${r.title}” will not be sent. You can schedule it again later.`, confirmLabel: 'Cancel reminder', danger: true })) {
-      await run('Reminder cancelled', () => remindersApi.cancel(r.id));
+    if (await confirm({ title: t('Cancel scheduled reminder?'), body: t('“{title}” will not be sent. You can schedule it again later.', { title: r.title }), confirmLabel: t('Cancel reminder'), danger: true })) {
+      await run(t('Reminder cancelled'), () => remindersApi.cancel(r.id));
     }
   }
   async function remove(r: Reminder) {
-    if (await confirm({ title: 'Delete reminder?', body: `“${r.title}” will be deleted. Its delivery logs are kept for auditing.`, confirmLabel: 'Delete', danger: true })) {
-      await run('Reminder deleted', () => remindersApi.remove(r.id));
+    if (await confirm({ title: t('Delete reminder?'), body: t('“{title}” will be deleted. Its delivery logs are kept for auditing.', { title: r.title }), confirmLabel: t('Delete'), danger: true })) {
+      await run(t('Reminder deleted'), () => remindersApi.remove(r.id));
     }
   }
 
@@ -63,16 +64,16 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
     <div className="page">
       <div className="page-head">
         <h1 className="headline-m">{cfg.title}</h1>
-        {can('reminders.create') && <LinkButton to="/reminders/new" icon="add">New reminder</LinkButton>}
+        {can('reminders.create') && <LinkButton to="/reminders/new" icon="add">{t('New reminder')}</LinkButton>}
       </div>
 
       <div className="row">
         <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-          <TextField label="Search title" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+          <TextField label={t('Search title')} value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
         </div>
-        <Segmented label="Kind" value={kind} onChange={(v) => { setKind(v); setPage(1); }} options={[{ value: 'all', label: 'All' }, { value: 'daily', label: 'Daily' }, { value: 'emergency', label: 'Emergency' }]} />
+        <Segmented label={t('Kind')} value={kind} onChange={(v) => { setKind(v); setPage(1); }} options={[{ value: 'all', label: t('All') }, { value: 'daily', label: t('Daily') }, { value: 'emergency', label: t('Emergency') }]} />
       </div>
-      <div className="chips" role="group" aria-label="Status filter">
+      <div className="chips" role="group" aria-label={t('Status filter')}>
         {cfg.statuses.map((s) => (
           <FilterChip key={s} selected={selected.includes(s)} onClick={() => toggle(s)}>
             {LABEL[s]}
@@ -80,18 +81,18 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
         ))}
       </div>
 
-      <AsyncView state={state} isEmpty={(d) => d.items.length === 0} empty={<EmptyState icon={cfg.emptyIcon} title={q || selected.length || kind !== 'all' ? 'No matching reminders' : cfg.empty} hint={q || selected.length || kind !== 'all' ? 'Try changing the filters.' : cfg.hint} />}>
+      <AsyncView state={state} isEmpty={(d) => d.items.length === 0} empty={<EmptyState icon={cfg.emptyIcon} title={q || selected.length || kind !== 'all' ? t('No matching reminders') : cfg.empty} hint={q || selected.length || kind !== 'all' ? t('Try changing the filters.') : cfg.hint} />}>
         {(d) => (
           <>
             <div className="table-wrap">
               <table className="rt">
                 <thead>
                   <tr>
-                    <th>Title</th>
-                    <th>Date</th>
-                    <th>{mode === 'scheduled' ? 'Send time' : 'Sent at'}</th>
-                    <th>Status</th>
-                    <th aria-label="Actions" />
+                    <th>{t('Title')}</th>
+                    <th>{t('Date')}</th>
+                    <th>{mode === 'scheduled' ? t('Send time') : t('Sent at')}</th>
+                    <th>{t('Status')}</th>
+                    <th aria-label={t('Actions')} />
                   </tr>
                 </thead>
                 <tbody>
@@ -100,8 +101,8 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
                       <td>
                         <a href={`#/reminders/${r.id}`} className="title-s" style={{ textDecoration: 'none' }}>{r.title}</a>
                         <div className="row" style={{ gap: 6 }}>
-                          {r.kind === 'emergency' && <Badge status="emergency">Emergency</Badge>}
-                          {r.recurrence !== 'none' && <span className="body-s muted">Repeats {r.recurrence}</span>}
+                          {r.kind === 'emergency' && <Badge status="emergency">{t('Emergency')}</Badge>}
+                          {r.recurrence !== 'none' && <span className="body-s muted">{t('Repeats {recurrence}', { recurrence: t(r.recurrence) })}</span>}
                         </div>
                       </td>
                       <td data-label="Tanggal">{longDate(r.reminder_date)}</td>
@@ -109,12 +110,12 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
                       <td><Badge status={r.status}>{LABEL[r.status]}</Badge></td>
                       <td>
                         <div className="row" style={{ gap: 0, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
-                          <IconButton icon="visibility" label="Open" onClick={() => nav(`/reminders/${r.id}`)} />
-                          {can('schedule.manage') && (r.status === 'pending' || r.status === 'draft') && <IconButton icon="schedule" label={r.status === 'pending' ? 'Reschedule' : 'Schedule'} onClick={() => setEditing(r)} />}
-                          {can('schedule.manage') && r.status === 'pending' && <IconButton icon="cancel" label="Cancel schedule" onClick={() => cancel(r)} />}
-                          {can('reminders.send') && r.status === 'failed' && <IconButton icon="refresh" label="Retry failed deliveries" onClick={() => run('Retry queued', () => remindersApi.retryFailed(r.id))} />}
-                          {can('reminders.create') && <IconButton icon="copy" label="Duplicate" onClick={async () => { try { const c = await remindersApi.duplicate(r.id); notify('Duplicated as draft'); nav(`/reminders/${c.id}/edit`); } catch (e) { notify(errorMessage(e), { kind: 'error' }); } }} />}
-                          {can('reminders.delete') && <IconButton icon="delete" label="Delete" onClick={() => remove(r)} />}
+                          <IconButton icon="visibility" label={t('Open')} onClick={() => nav(`/reminders/${r.id}`)} />
+                          {can('schedule.manage') && (r.status === 'pending' || r.status === 'draft') && <IconButton icon="schedule" label={r.status === 'pending' ? t('Reschedule') : t('Schedule')} onClick={() => setEditing(r)} />}
+                          {can('schedule.manage') && r.status === 'pending' && <IconButton icon="cancel" label={t('Cancel schedule')} onClick={() => cancel(r)} />}
+                          {can('reminders.send') && r.status === 'failed' && <IconButton icon="refresh" label={t('Retry failed deliveries')} onClick={() => run(t('Retry queued'), () => remindersApi.retryFailed(r.id))} />}
+                          {can('reminders.create') && <IconButton icon="copy" label={t('Duplicate')} onClick={async () => { try { const c = await remindersApi.duplicate(r.id); notify(t('Duplicated as draft')); nav(`/reminders/${c.id}/edit`); } catch (e) { notify(errorMessage(e), { kind: 'error' }); } }} />}
+                          {can('reminders.delete') && <IconButton icon="delete" label={t('Delete')} onClick={() => remove(r)} />}
                         </div>
                       </td>
                     </tr>
@@ -123,9 +124,9 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
               </table>
             </div>
             <div className="pager">
-              <span className="body-s muted">{d.total} total · page {d.page} of {Math.max(1, Math.ceil(d.total / d.pageSize))}</span>
-              <Button variant="outlined" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-              <Button variant="outlined" disabled={page * d.pageSize >= d.total} onClick={() => setPage((p) => p + 1)}>Next</Button>
+              <span className="body-s muted">{t('{n} total · page {page} of {pages}', { n: d.total, page: d.page, pages: Math.max(1, Math.ceil(d.total / d.pageSize)) })}</span>
+              <Button variant="outlined" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t('Previous')}</Button>
+              <Button variant="outlined" disabled={page * d.pageSize >= d.total} onClick={() => setPage((p) => p + 1)}>{t('Next')}</Button>
             </div>
           </>
         )}
