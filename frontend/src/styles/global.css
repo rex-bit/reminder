@@ -403,3 +403,6 @@ tr:last-child td { border-bottom: 0; }
 }
 
 strong, b { font-weight: 600; }
+/* Hero greeting and date are the focal text: bold. */
+.hero .label-l { font-weight: 700; font-size: 16px; }
+.hero .display-s { font-weight: 700; }
