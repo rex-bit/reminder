@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [phase-1-foundation, main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # No lockfile is committed yet, so `npm install` (not `npm ci`).
+      - run: npm install --include=dev
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      # Same entry point the Pterodactyl server will start.
+      - run: test -f dist/server.js && test -f dist/db/migrate.js && test -f dist/db/seed.js
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --include=dev
+      - run: npm run typecheck
+      - run: npm run build
