@@ -7,7 +7,7 @@ Browser ──► Vercel (frontend, HTTPS)
                │  VITE_API_URL=https://api.classreminder.my.id/api/v1
                ▼
         Nginx di VPS (HTTPS, Let's Encrypt)       api.classreminder.my.id
-               │  proxy_pass http://127.0.0.1:<PORT>
+               │  proxy_pass http://<BACKEND>  (alamat hasil verifikasi 5.2)
                ▼
         Pterodactyl server "reminder-api" (Node.js 22) ── API + delivery worker
                │                              │
@@ -29,7 +29,24 @@ Browser ──► Vercel (frontend, HTTPS)
 | Egg Node.js Generic: image `ghcr.io/ptero-eggs/yolks:nodejs_22` tersedia, startup command bawaan, variabel `USER_UPLOAD`/`MAIN_FILE` | **Terverifikasi dari dokumentasi egg**, belum dari panelmu | [eggs.pterodactyl.io](https://eggs.pterodactyl.io/egg/generic-node-js-generic) |
 | Neon Free: 100 CU-jam/bulan per project, scale-to-zero 5 menit tidak bisa dimatikan | **Terverifikasi dari dokumentasi Neon** | [neon.com/faqs](https://neon.com/faqs/cheapest-ways-run-postgres-database-low-traffic) |
 | Semua perintah Docker, Wings, Redis, Postgres, Nginx, Certbot di VPS | **BELUM diuji** | Belum ada output terminal dari VPS. Jalankan bertahap dan cocokkan dengan "Hasil yang diharapkan". |
-| Perilaku Wings v1.13.4 untuk allocation `127.0.0.1` | **BELUM diverifikasi** | Diperiksa dengan perintah di [5.2](#52-allocation-dan-uji-pemetaan-port) sebelum Nginx dipakai. |
+| Ke alamat mana Wings v1.13.4 mem-bind allocation `127.0.0.1` (loopback atau IP gateway jaringan Docker, mis. `172.18.0.1`) | **BELUM diverifikasi**; sumber yang kubaca tidak sepakat | Jangan berasumsi. Target Nginx (`<BACKEND>`) diambil dari output `docker port` nyata di [5.2](#52-allocation-dan-uji-pemetaan-port). |
+| DNS `api.classreminder.my.id` → `188.166.177.117` | **Terverifikasi** (`nslookup`, oleh pemilik) | bagian 2 |
+
+## Fakta VPS Nawasena (dari inventaris pemilik)
+
+| Hal | Nilai |
+|---|---|
+| Login SSH | user `aryan` dengan sudo (**bukan root**); semua perintah memakai `sudo` seperlunya |
+| Nginx, Docker, Wings, MariaDB, Redis panel | aktif; `nginx -t` berhasil |
+| UFW | aktif; diizinkan: SSH, 80, 443, 8080, 2022 |
+| Redis panel | `127.0.0.1:6379` |
+| Wings | 8080, 2022 |
+| Port 4000, 6390, 5440 | tidak terlihat dipakai |
+| Jaringan Docker `pterodactyl_nw` | dual-stack; IPv4 subnet `172.18.0.0/16`, gateway `172.18.0.1` |
+| `docker ps` | tidak ada kontainer berjalan; `docker ps -a` punya satu kontainer lama `Exited (1)` (jangan disentuh) |
+| Allocation node Singapore-01 | `188.166.177.117:25565` (server "Whatsapp Bot"), `127.0.0.1:4000` (dibuat, belum dipakai) |
+| Panel / Wings | panel 1.15.2 / Wings v1.13.4 |
+| DNS `api.classreminder.my.id` | sudah mengarah ke `188.166.177.117` |
 
 Isi:
 0. [Inventaris sebelum mengubah apa pun](#0-inventaris-sebelum-mengubah-apa-pun)
@@ -52,7 +69,7 @@ Isi:
 Semua perintah di bagian ini **hanya membaca**. Simpan hasilnya, supaya ada pembanding kalau perlu rollback.
 
 ```bash
-sudo mkdir -p /root/reminder-deploy && cd /root/reminder-deploy
+mkdir -p "$HOME/reminder-deploy" && cd "$HOME/reminder-deploy"      # di home user `aryan`, bukan /root
 {
   date; uname -a; lsb_release -d
   echo "--- port yang sedang dipakai"; ss -tlnp
@@ -62,8 +79,8 @@ sudo mkdir -p /root/reminder-deploy && cd /root/reminder-deploy
   echo "--- daemon.json"; cat /etc/docker/daemon.json 2>/dev/null || echo "(tidak ada)"
   echo "--- nginx"; nginx -v 2>&1; nginx -T 2>/dev/null | grep -nE "server_name|listen|include " | head -80
   echo "--- sertifikat"; certbot certificates 2>/dev/null | grep -E "Certificate Name|Domains|Expiry"
-  echo "--- ufw"; ufw status verbose
-  echo "--- wings"; systemctl is-active wings; wings --version 2>/dev/null
+  echo "--- ufw"; sudo ufw status verbose
+  echo "--- wings"; systemctl is-active wings; sudo wings --version 2>/dev/null
   echo "--- resource"; free -h; df -h /
 } 2>&1 | tee inventory-before.txt
 ```
@@ -83,7 +100,7 @@ sudo docker volume ls --format '{{.Name}}' | grep -E '^reminder-' && echo "ADA: 
 
 Cadangan konfigurasi Nginx:
 ```bash
-sudo cp -a /etc/nginx /root/reminder-deploy/nginx-backup-$(date +%F)
+sudo cp -a /etc/nginx "$HOME/reminder-deploy/nginx-backup-$(date +%F)"
 sudo nginx -t
 ```
 
@@ -102,9 +119,9 @@ Pilih pola frontend (menentukan cookie dan CORS):
 
 **Urutan kerja** (jangan loncat):
 1. Inventaris (bagian 0).
-2. DNS `api` dibuat dan sudah terpropagasi (bagian 2). *Status saat ini: belum dibuat.*
+2. DNS `api` dibuat dan sudah terpropagasi (bagian 2). *Status: selesai, `nslookup` mengarah ke `188.166.177.117`.*
 3. PostgreSQL dan Redis (bagian 3 dan 4), diuji dari jaringan Docker.
-4. Server Pterodactyl, setup satu kali, start harian (bagian 5), diuji lewat `curl http://127.0.0.1:<PORT>/healthz` **dari VPS**.
+4. Server Pterodactyl, setup satu kali, start harian (bagian 5), diuji lewat `curl http://<BACKEND>/healthz` **dari VPS** (`<BACKEND>` ditentukan di 5.2).
 5. Redis/Postgres diuji dari **dalam kontainer backend** (5.7).
 6. Nginx + SSL (bagian 7).
 7. Vercel (bagian 8), lalu pengujian akhir (bagian 9).
@@ -164,29 +181,58 @@ nc -zv -w 3 188.166.177.117 5440    # dari luar: harus gagal
 
 ### 3.3 Backup dan restore
 
+Login SSH sebagai `aryan` (bukan root). `/root` tidak bisa dimasuki user biasa, dan operator `>` / `<` pada shell dijalankan **oleh user yang mengetik**, bukan oleh `sudo`. Karena itu direktori backup ada di `/var/backups/reminder` (milik root, mode 700), dan semua pengalihan output dilakukan **di dalam skrip yang dijalankan dengan sudo**.
+
 ```bash
-sudo mkdir -p /root/backup/reminder
-sudo tee /root/backup/reminder-backup.sh >/dev/null <<'EOF'
+sudo install -d -m 700 -o root -g root /var/backups/reminder
+sudo tee /usr/local/sbin/reminder-backup.sh >/dev/null <<'EOF'
 #!/bin/bash
+# Dijalankan sebagai root (sudo/cron). Retensi HANYA berjalan setelah backup baru terbukti valid.
 set -euo pipefail
-DIR=/root/backup/reminder
-docker exec reminder-postgres pg_dump -U reminder -Fc reminder > "$DIR/reminder-$(date +%F-%H%M).dump"
-find "$DIR" -name 'reminder-*.dump' -mtime +14 -delete
+DIR=/var/backups/reminder
+TS=$(date +%F-%H%M)
+TMP="$DIR/.tmp-$TS.dump"
+OUT="$DIR/reminder-$TS.dump"
+trap 'rm -f "$TMP"' EXIT
+
+docker exec reminder-postgres pg_dump -U reminder -Fc reminder > "$TMP"
+[ -s "$TMP" ] || { echo "GAGAL: file backup kosong" >&2; exit 1; }
+# validasi struktur dump (membaca daftar isi; gagal bila dump rusak/terpotong)
+docker exec -i reminder-postgres pg_restore --list < "$TMP" > /dev/null
+mv "$TMP" "$OUT"
+chmod 600 "$OUT"
+echo "OK: $OUT ($(stat -c %s "$OUT") byte)"
+
+# retensi: simpan 14 backup terbaru; yang lebih lama dihapus (setelah validasi di atas lolos)
+ls -1t "$DIR"/reminder-*.dump | tail -n +15 | xargs -r rm --
 EOF
-sudo chmod 700 /root/backup/reminder-backup.sh
-echo '15 3 * * * root /root/backup/reminder-backup.sh' | sudo tee /etc/cron.d/reminder-backup
-sudo /root/backup/reminder-backup.sh && ls -lh /root/backup/reminder
+sudo chmod 700 /usr/local/sbin/reminder-backup.sh
+
+# jalankan sekali secara manual dan LIHAT hasilnya sebelum menjadwalkan
+sudo /usr/local/sbin/reminder-backup.sh
+sudo ls -lh /var/backups/reminder
+
+# jadwal harian 03:15 (hanya setelah tes manual di atas berhasil)
+echo '15 3 * * * root /usr/local/sbin/reminder-backup.sh >> /var/log/reminder-backup.log 2>&1' | sudo tee /etc/cron.d/reminder-backup
+sudo chmod 644 /etc/cron.d/reminder-backup
 ```
+
+Hasil yang diharapkan dari tes manual: baris `OK: /var/backups/reminder/reminder-<tanggal>.dump (<ukuran> byte)` dan file muncul di `ls`. Kalau skrip gagal (`GAGAL:` atau error `docker exec`), tidak ada file yang dihapus, karena retensi ada setelah validasi.
+
+Cek log cron keesokan harinya: `sudo tail -n 20 /var/log/reminder-backup.log`.
 
 Salin file `.dump` ke tempat lain secara berkala (laptop atau penyimpanan cloud); cadangan di VPS yang sama hilang bila VPS hilang.
 
-Uji restore ke database sementara (lakukan sekali, jangan ke database produksi):
+Uji restore ke database sementara (sekali, jangan ke database produksi):
 ```bash
-LATEST=$(ls -t /root/backup/reminder/*.dump | head -1)
+LATEST=$(sudo sh -c 'ls -1t /var/backups/reminder/reminder-*.dump | head -1')
+echo "$LATEST"
+sudo docker cp "$LATEST" reminder-postgres:/tmp/restore_test.dump      # tanpa operator '<' (tidak ikut sudo)
 sudo docker exec reminder-postgres createdb -U reminder restore_test
-sudo docker exec -i reminder-postgres pg_restore -U reminder -d restore_test < "$LATEST"
+sudo docker exec reminder-postgres pg_restore -U reminder -d restore_test /tmp/restore_test.dump
 sudo docker exec reminder-postgres psql -U reminder -d restore_test -c "select count(*) from reminders;"
 sudo docker exec reminder-postgres dropdb -U reminder restore_test
+sudo docker exec reminder-postgres rm -f /tmp/restore_test.dump
 ```
 
 ## 4. Redis terisolasi
@@ -272,33 +318,46 @@ Cari port bebas (bagian 0). Contoh di bawah memakai `4000`. **Port allocation = 
 
 ### 5.2 Allocation dan uji pemetaan port
 
-Panel → **Admin → Nodes → Singapore-01 → Allocation**: tambah IP `127.0.0.1`, port `4000`.
+Allocation `127.0.0.1:4000` sudah dibuat di panel (Admin → Nodes → Singapore-01 → Allocation).
 
-Maksudnya: Wings memetakan port host ke port kontainer yang sama pada IP allocation, jadi `127.0.0.1:4000` di host meneruskan ke `:4000` dalam kontainer, dan hanya Nginx di VPS yang bisa mencapainya. Port Docker yang dipublikasikan di IP publik **melewati ufw**, itulah alasan tidak memakai IP publik. Asumsi ini **harus dibuktikan** setelah server pertama dijalankan (5.6):
+**Jangan berasumsi ke mana Wings mem-bind `127.0.0.1`.** Dokumentasi yang kubaca menyebut Wings mengganti `127.0.0.1` dengan interface jaringan Docker (untuk variabel `SERVER_IP`), tetapi tidak menyebut alamat bind port secara jelas. Di VPS ini hasilnya bisa `127.0.0.1:4000` **atau** IP gateway jaringan Wings (`172.18.0.1:4000`). Dua-duanya bukan alamat publik, dan dua-duanya bisa dijangkau Nginx di host. Yang tidak boleh adalah `0.0.0.0` atau `188.166.177.117`.
+
+Setelah server dibuat dan dijalankan (5.6), tentukan `<BACKEND>` dari output nyata:
 
 ```bash
-UUID=<UUID server: panel → server → Settings → Debug Information → UUID>
+UUID="ISI_UUID_SERVER"      # ganti: panel → server → Settings → Debug Information → UUID
+PORT_API=4000                                  # sama dengan PORT di .env
 sudo docker ps --filter "name=$UUID" --format 'table {{.Names}}\t{{.Ports}}'
 sudo docker port "$UUID"
 sudo docker inspect "$UUID" --format '{{json .HostConfig.PortBindings}}'
-sudo ss -tlnp | grep ':4000'
-curl -sS -i http://127.0.0.1:4000/healthz
+sudo ss -tlnp | grep ":$PORT_API"
+
+# alamat IPv4 tempat Docker mem-bind port (hasil nyata, jangan diketik manual)
+BACKEND=$(sudo docker port "$UUID" "$PORT_API/tcp" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$' | head -1)
+echo "BACKEND=$BACKEND"
+
+# uji dari host: alamat hasil verifikasi, lalu dua kandidat sebagai pembanding
+curl -sS -m 5 -i "http://$BACKEND/healthz"
+curl -sS -m 5 -o /dev/null -w "gateway $GW:%{http_code}\n" "http://$GW:$PORT_API/healthz"
+curl -sS -m 5 -o /dev/null -w "loopback 127.0.0.1:%{http_code}\n" "http://127.0.0.1:$PORT_API/healthz"
 ```
 
-Hasil yang diharapkan: `127.0.0.1:4000->4000/tcp` pada `docker port`, `ss` menunjukkan `127.0.0.1:4000`, dan `curl` mengembalikan `200 {"status":"ok"}`.
+`$GW` berasal dari [4.1](#41-cek-jaringan-docker-yang-dipakai-wings-jangan-hardcode) (jalankan ulang bila sesi SSH baru). Hasil yang diharapkan: `BACKEND` berisi `127.0.0.1:4000` atau `172.18.0.1:4000` (di VPS ini), dan `curl http://$BACKEND/healthz` mengembalikan `200 {"status":"ok"}`. Salah satu dari dua pembanding akan gagal; itu normal.
 
 | Temuan | Artinya | Tindakan |
 |---|---|---|
-| `docker port` tidak menampilkan `127.0.0.1:4000->4000` | Allocation yang terpasang di server bukan yang dibuat tadi | Panel → server → **Network**: jadikan `127.0.0.1:4000` allocation utama, restart. |
-| `docker port` benar tapi `curl` ditolak | Aplikasi belum listen atau belum start | Lihat console; pastikan log `API listening ... "host":"0.0.0.0","port":4000`. |
-| Port muncul di `0.0.0.0:4000` atau IP publik | Allocation memakai IP publik | Pindahkan ke `127.0.0.1`; jangan lanjut ke Nginx sebelum tes eksternal (9) gagal seperti seharusnya. |
-| Panel menolak allocation `127.0.0.1` | Versi panel/Wings tidak mengizinkan | Rencana B: lihat bawah. |
+| `BACKEND` kosong | Server belum jalan, atau allocation bukan yang terpasang | Cek console; panel → server → **Network**: jadikan `127.0.0.1:4000` allocation utama, restart. |
+| `BACKEND` = `127.0.0.1:4000` atau `<GATEWAY>:4000`, `curl` 200 | Benar | Pakai nilai itu sebagai target Nginx (7.3). |
+| `BACKEND` benar tapi `curl` ditolak/timeout | Aplikasi belum listen, atau ufw/aturan lain menghalangi | Lihat console; pastikan log `API listening ... "host":"0.0.0.0","port":4000`. Dari host ke IP gateway sendiri seharusnya melewati `lo` dan tidak butuh aturan ufw. |
+| Port muncul di `0.0.0.0:4000` atau `188.166.177.117:4000` | Terekspos publik | **Hentikan.** Pindahkan allocation ke `127.0.0.1`; jangan lanjut ke Nginx sebelum tes eksternal (9) gagal seperti seharusnya. |
 
-**Rencana B untuk allocation** (hanya bila `127.0.0.1` tidak bisa dipakai): pakai IP kontainer di jaringan Wings sebagai target `proxy_pass`:
+Catatan keamanan: bila port ter-bind di IP gateway, kontainer lain di jaringan Wings (termasuk server bot) secara jaringan bisa menghubungi API di port itu, tetapi ufw yang aktif memblokir lalu lintas kontainer → host kecuali ada aturan `allow`. Panduan ini hanya menambah aturan `allow` untuk port 6390 dan 5440, bukan untuk port API.
+
+**Rencana B untuk allocation** (hanya bila kedua alamat di atas tidak bisa dijangkau): pakai IP kontainer di jaringan Wings sebagai target `proxy_pass`:
 ```bash
 sudo docker inspect "$UUID" --format '{{(index .NetworkSettings.Networks "'"$NET"'").IPAddress}}'
 ```
-IP ini bisa berubah ketika kontainer dibuat ulang (mis. setelah reinstall atau perubahan allocation), sehingga Nginx harus diperbarui. Karena rapuh, ini hanya cadangan.
+IP ini bisa berubah ketika kontainer dibuat ulang, sehingga Nginx harus diperbarui. Karena rapuh, ini hanya cadangan.
 
 ### 5.3 Buat server
 **Admin → Servers → Create New**:
@@ -350,13 +409,13 @@ Start. Log yang benar:
 ```
 Tidak boleh ada `redis error` atau `worker error` berulang. Setelah itu jalankan uji pemetaan port di [5.2](#52-allocation-dan-uji-pemetaan-port).
 
-`HOST=0.0.0.0` di dalam kontainer wajib; backend memakai `app.listen(env.PORT, env.HOST)` (default `0.0.0.0`). Kalau `127.0.0.1`, Docker tidak bisa meneruskan koneksi masuk.
+`HOST=0.0.0.0` di dalam kontainer wajib; backend memakai `app.listen(env.PORT, env.HOST)` (default `0.0.0.0`). Kalau `127.0.0.1`, Docker tidak bisa meneruskan koneksi masuk ke dalam kontainer.
 
 ### 5.7 Uji konektivitas dari dalam kontainer backend
 Dari VPS (kontainer harus sedang berjalan). Perintah ini memakai `dotenv` dan `ioredis`/`pg` yang sudah terpasang di server, dan **tidak mencetak password**:
 
 ```bash
-UUID=<UUID server>
+UUID="ISI_UUID_SERVER"      # sama dengan 5.2
 sudo docker exec -w /home/container "$UUID" node -e "
 require('dotenv/config');
 const R=require('ioredis');const r=new R(process.env.REDIS_URL,{maxRetriesPerRequest:1});
@@ -490,7 +549,7 @@ server {
 
     # HSTS dan header keamanan lain sudah dikirim backend (helmet).
     location / {
-        proxy_pass http://127.0.0.1:4000;     # harus sama dengan allocation Pterodactyl
+        proxy_pass http://__BACKEND__;        # diganti dengan hasil 5.2 oleh perintah sed di bawah
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
@@ -500,6 +559,11 @@ server {
     }
 }
 EOF
+# isi target dengan hasil verifikasi nyata dari 5.2 (variabel BACKEND, mis. 172.18.0.1:4000 atau 127.0.0.1:4000).
+# Variabel shell hilang di sesi SSH baru: bila kosong, jalankan ulang 5.2 sampai echo "BACKEND=..." terisi.
+echo "BACKEND=$BACKEND"; test -n "$BACKEND"
+sudo sed -i "s|__BACKEND__|$BACKEND|" /etc/nginx/sites-available/api.classreminder.my.id.conf
+grep -n "proxy_pass" /etc/nginx/sites-available/api.classreminder.my.id.conf     # harus berisi alamat, bukan __BACKEND__
 sudo nginx -t && sudo systemctl reload nginx
 ```
 `ssl_session_cache` memakai nama zona unik (`SSL_reminder_api`) agar tidak bentrok dengan zona milik site panel. Kalau Nginx ≥ 1.25.1, `listen ... http2` hanya memunculkan peringatan deprecated, bukan error.
@@ -541,8 +605,9 @@ nc -zv -w 3 188.166.177.117 5440
 
 Dari VPS:
 ```bash
-sudo ss -tlnp | grep -E ':(4000|6390|5440)\b'    # 4000 di 127.0.0.1; 6390/5440 di <GATEWAY>
-curl -sS http://127.0.0.1:4000/healthz
+sudo ss -tlnp | grep -E ':(4000|6390|5440)\b'    # 4000 di <BACKEND> (127.0.0.1 atau gateway); 6390/5440 di <GATEWAY>; tidak ada yang di 0.0.0.0 / IP publik
+curl -sS "http://$BACKEND/healthz"               # BACKEND dari 5.2
+curl -sS "http://$GW:4000/healthz"               # uji gateway (bisa gagal bila bind-nya loopback; itu normal)
 # Panel dan layanan lama tetap sehat:
 curl -sI https://panel.cuanxuan.my.id | head -1
 systemctl is-active wings
@@ -574,11 +639,11 @@ Rollback berjalan dari yang terbaru ke yang terlama. Layanan lama tidak pernah d
 |---|---|
 | Frontend rusak setelah ganti `VITE_API_URL` | Vercel → Deployments → deployment lama → **Instant Rollback**, atau kembalikan variabel lalu Redeploy. |
 | Backend gagal start setelah update | Unggah zip commit sebelumnya (`git archive --format=zip -o old.zip <commit-lama>:backend`), setup tanpa seed (5.8), start. Migrasi hanya menambah tabel/kolom; jangan membuang skema tanpa cadangan (3.3). |
-| Nginx bermasalah | `sudo rm /etc/nginx/sites-enabled/api.classreminder.my.id.conf && sudo nginx -t && sudo systemctl reload nginx`. Cadangan penuh: `/root/reminder-deploy/nginx-backup-<tanggal>`. Site panel tidak terpengaruh. |
+| Nginx bermasalah | `sudo rm /etc/nginx/sites-enabled/api.classreminder.my.id.conf && sudo nginx -t && sudo systemctl reload nginx`. Cadangan penuh: `$HOME/reminder-deploy/nginx-backup-<tanggal>`. Site panel tidak terpengaruh. |
 | Sertifikat salah | `sudo certbot delete --cert-name api.classreminder.my.id` (setelah site dilepas dari Nginx). |
 | Redis bermasalah | `sudo docker stop reminder-redis`. Pengingat tetap ada di Postgres; scheduler memuat ulang antrean dari tabel `scheduled_jobs` tiap 60 detik setelah Redis hidup. |
 | Postgres bermasalah | Restore dari `.dump` terbaru (3.3) ke database baru, arahkan `DATABASE_URL`, restart server. |
-| Berhenti total | Hapus server `reminder-api` di panel; `sudo docker rm -f reminder-redis reminder-postgres`; hapus volume **hanya bila data tidak diperlukan lagi**: `sudo docker volume rm reminder-redis-data reminder-pg-data`; hapus aturan ufw yang ditambahkan (`sudo ufw status numbered`, lalu `sudo ufw delete <nomor>`); hapus site Nginx dan cert; hapus record DNS `api`; hapus allocation `127.0.0.1` di panel bila tidak dipakai. Bandingkan dengan `/root/reminder-deploy/inventory-before.txt`. |
+| Berhenti total | Hapus server `reminder-api` di panel; `sudo docker rm -f reminder-redis reminder-postgres`; hapus volume **hanya bila data tidak diperlukan lagi**: `sudo docker volume rm reminder-redis-data reminder-pg-data`; hapus aturan ufw yang ditambahkan (`sudo ufw status numbered`, lalu `sudo ufw delete <nomor>`); hapus site Nginx dan cert; hapus record DNS `api`; hapus allocation `127.0.0.1` di panel bila tidak dipakai. Bandingkan dengan `$HOME/reminder-deploy/inventory-before.txt`. |
 | Cadangan sementara | Backend Codespaces bisa dipakai untuk uji coba (`docs/TESTING.md`), bukan untuk penggunaan nyata. |
 
 Aturan keselamatan: jangan menjalankan `docker system prune`, `docker volume prune`, atau `docker network rm pterodactyl_nw` di VPS ini; semuanya bisa menghapus data layanan lain.
@@ -592,7 +657,7 @@ Aturan keselamatan: jangan menjalankan `docker system prune`, `docker volume pru
 | `Cannot find module .../dist/server.js` | Build belum jalan/gagal | Jalankan lagi setup 5.5, baca error `tsc`. |
 | `tsc: not found` saat build | devDependencies tidak terpasang | Pakai `npm install --include=dev`. |
 | `502 Bad Gateway` | Server mati, atau port `proxy_pass` ≠ allocation | Start server; samakan port; lihat `ss -tlnp`. |
-| `curl 127.0.0.1:4000` dari VPS gagal padahal server jalan | `HOST=127.0.0.1`, `PORT` ≠ allocation, atau allocation bukan `127.0.0.1:4000` | Ikuti tabel 5.2. |
+| `curl http://$BACKEND/healthz` dari VPS gagal padahal server jalan | `HOST=127.0.0.1`, `PORT` ≠ allocation, atau allocation bukan `127.0.0.1:4000` | Ikuti tabel 5.2. |
 | `redis error` berulang, `ECONNREFUSED` | Kontainer Redis mati, `GW` salah, ufw memblokir, atau `userland-proxy` mati | `sudo docker ps`, cek 4.1/4.2, uji 5.7, lalu Rencana B (4.4). |
 | `NOAUTH` / `WRONGPASS` | Password di `REDIS_URL` tidak cocok | Perbaiki `REDIS_URL` tanpa spasi/kutip. |
 | `healthz` = `database_unavailable` | `DATABASE_URL` salah, Postgres mati, atau ufw memblokir port 5440 | Uji 5.7 (postgres). Untuk Neon: `DATABASE_SSL=true`. |
@@ -600,6 +665,6 @@ Aturan keselamatan: jangan menjalankan `docker system prune`, `docker volume pru
 | Login berhasil tapi kembali ke halaman login | Cookie lintas situs diblokir (pola A di Safari) atau `SECURE`/`SAMESITE` salah | Pakai pola B (domain sendiri, `lax`). |
 | Banyak pengguna kena `rate_limited` bersamaan | `TRUST_PROXY` salah, semua IP terbaca sebagai IP Nginx | `TRUST_PROXY=1` dan header seperti 7.3. |
 | Certbot: `Connection refused` / `Timeout` | DNS belum benar atau port 80 diblokir | `dig`, `ufw allow 80/tcp`, firewall penyedia VPS. |
-| Port 4000 bisa diakses dari internet | Allocation memakai IP publik/`0.0.0.0` | Allocation `127.0.0.1`, pindahkan server. |
+| Port 4000 bisa diakses dari internet | Allocation memakai IP publik/`0.0.0.0` | Allocation `127.0.0.1`, pindahkan server (5.2). |
 | `nginx -t` gagal setelah menambah site | Konflik `ssl_session_cache`/`default_server`, atau typo | Hapus symlink, `nginx -t`, perbaiki; lihat output `nginx -T` di inventaris. |
 | Notifikasi tidak masuk | VAPID kosong, HP belum subscribe (iPhone belum Add to Home Screen), `public.enabled` mati | Isi VAPID, aktifkan ulang notifikasi, cek setting. |
