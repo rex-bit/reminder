@@ -74,6 +74,13 @@ Catat dari output:
 - apakah `daemon.json` mematikan `userland-proxy` (lihat [4.1](#41-cek-jaringan-docker-yang-dipakai-wings-jangan-hardcode));
 - site Nginx yang sudah ada dan versi Nginx (Ubuntu 24.04 biasanya 1.24).
 
+Pastikan nama kontainer/volume yang akan dibuat **belum ada** (jangan menyentuh kontainer lama, termasuk yang berstatus `Exited`):
+```bash
+sudo docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}'      # hanya dilihat
+sudo docker ps -a --format '{{.Names}}' | grep -E '^reminder-' && echo "ADA: nama bentrok, STOP" || echo "nama kontainer bebas"
+sudo docker volume ls --format '{{.Name}}' | grep -E '^reminder-' && echo "ADA: volume bentrok, STOP" || echo "nama volume bebas"
+```
+
 Cadangan konfigurasi Nginx:
 ```bash
 sudo cp -a /etc/nginx /root/reminder-deploy/nginx-backup-$(date +%F)
@@ -193,13 +200,15 @@ Hanya membaca:
 sudo grep -A8 '^  network:' /etc/pterodactyl/config.yml     # nama jaringan, dns, interface
 sudo docker network ls
 NET=pterodactyl_nw                                          # ganti bila config.yml memakai nama lain
-SUBNET=$(sudo docker network inspect "$NET" --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
-GW=$(sudo docker network inspect "$NET" --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
+# Jaringan Wings bisa dual-stack (IPv4 + IPv6): ambil HANYA entri IPv4, jangan menggabungkan semua IPAM.Config.
+SUBNET=$(sudo docker network inspect "$NET" --format '{{range .IPAM.Config}}{{.Subnet}} {{end}}' | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$' | head -1)
+GW=$(sudo docker network inspect "$NET" --format '{{range .IPAM.Config}}{{.Gateway}} {{end}}' | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
 echo "net=$NET subnet=$SUBNET gateway=$GW"
+[ -n "$SUBNET" ] && [ -n "$GW" ] || echo "GAGAL: SUBNET/GW kosong. JANGAN lanjut."
 cat /etc/docker/daemon.json 2>/dev/null                     # cari "userland-proxy": false
 ```
 
-Kontainer server Pterodactyl akan mengakses layanan lewat alamat gateway (`$GW`) ini. Cara ini bergantung pada `userland-proxy` Docker (default **aktif**). Kalau `daemon.json` mengatur `"userland-proxy": false`, pakai [Rencana B](#44-rencana-b-bila-uji-dari-kontainer-gagal).
+Variabel shell **hilang setiap sesi SSH baru**: jalankan ulang blok di atas sebelum perintah lain yang memakai `$NET`, `$SUBNET`, `$GW`. Hasil yang benar harus berupa **satu** subnet IPv4 dan **satu** gateway IPv4 (di VPS Nawasena: `172.18.0.0/16` dan `172.18.0.1`; tetap dihitung dari perintah, bukan diketik manual). Kontainer server Pterodactyl akan mengakses layanan lewat alamat gateway (`$GW`) ini. Cara ini bergantung pada `userland-proxy` Docker (default **aktif**). Kalau `daemon.json` mengatur `"userland-proxy": false`, pakai [Rencana B](#44-rencana-b-bila-uji-dari-kontainer-gagal).
 
 ### 4.2 Jalankan Redis
 
@@ -544,8 +553,10 @@ Ketahanan:
 ```bash
 sudo docker restart reminder-redis      # backend harus pulih sendiri; cek console tanpa error terus-menerus
 sudo docker restart reminder-postgres   # idem
-# lalu reboot VPS terjadwal (opsional): semua --restart unless-stopped harus hidup kembali,
-# dan Wings menyalakan server Pterodactyl sendiri.
+# Setelah reboot VPS (jadwalkan, jangan saat dipakai): cek `sudo docker ps` -> reminder-redis dan reminder-postgres harus Up.
+# RISIKO yang belum terverifikasi: keduanya di-bind ke IP gateway jaringan Wings; bila jaringan itu belum ada saat Docker start,
+# kontainer gagal naik ('cannot assign requested address'). Bila terjadi: `sudo docker start reminder-redis reminder-postgres`
+# setelah Wings hidup, lalu restart server reminder-api. Cek juga bahwa server Pterodactyl menyala sendiri.
 ```
 
 Di aplikasi:
