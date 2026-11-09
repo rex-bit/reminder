@@ -110,12 +110,12 @@ Pilih pola frontend (menentukan cookie dan CORS):
 
 | | A. Frontend tetap `*.vercel.app` | B. Frontend di `classreminder.my.id` (disarankan) |
 |---|---|---|
-| `CORS_ORIGINS` | `https://reminders-class.vercel.app` | `https://classreminder.my.id` (tambah `https://www.classreminder.my.id` bila dipakai) |
+| `CORS_ORIGINS` | `https://reminders-class.vercel.app` | `https://www.classreminder.my.id` (domain frontend yang dipakai pemilik; tambahkan `https://classreminder.my.id` bila apex juga dipakai) |
 | `COOKIE_SAMESITE` | `none` | `lax` |
 | `COOKIE_SECURE` | `true` | `true` |
 | Login admin di iPhone/Safari | bisa gagal (cookie lintas situs) | aman |
 
-`CORS_ORIGINS` dibandingkan persis (`env.CORS_ORIGINS.includes(origin)`): tanpa spasi, tanpa `/` di akhir, dan `www` dihitung domain berbeda. Selama peralihan boleh diisi dua-duanya, dipisah koma; selama `*.vercel.app` masih dipakai, biarkan `COOKIE_SAMESITE=none`.
+`CORS_ORIGINS` dibandingkan persis (`env.CORS_ORIGINS.includes(origin)`): tanpa spasi, tanpa `/` di akhir, dan `www` dihitung domain berbeda. Frontend dan API (`api.classreminder.my.id`) berada di situs yang sama (`classreminder.my.id`), jadi cookie tetap berlaku walau `COOKIE_SAMESITE=none`. Setelah `*.vercel.app` tidak dipakai lagi, ubah ke `lax` dan hapus origin vercel.app dari daftar. Selama peralihan boleh diisi dua-duanya, dipisah koma; selama `*.vercel.app` masih dipakai, biarkan `COOKIE_SAMESITE=none`.
 
 **Urutan kerja** (jangan loncat):
 1. Inventaris (bagian 0).
