@@ -30,7 +30,7 @@ templatesRouter.post('/', requirePermission('templates.manage'), validate({ body
     `INSERT INTO reminder_templates (name, description, content, message_body, created_by) VALUES ($1, $2, $3::jsonb, $4, $5) RETURNING ${COLS}`,
     [b.name, b.description, JSON.stringify(b.content), b.message_body, req.admin!.id],
   );
-  await logActivity({ action: 'template.create', entityType: 'template', entityId: r.rows[0].id, metadata: { name: b.name } }, req);
+  await logActivity({ action: 'template.create', entityType: 'template', entityId: r.rows[0]!.id, metadata: { name: b.name } }, req);
   res.status(201).json({ template: r.rows[0] });
 }));
 

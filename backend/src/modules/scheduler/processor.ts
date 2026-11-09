@@ -145,7 +145,7 @@ export async function processDelivery(job: Job<DeliverJobData>): Promise<void> {
 
 async function finalize(rem: ReminderRow, jobRowId: string, ok: boolean, error: string | null): Promise<void> {
   let plan = null as Plan | null;
-  let newStatus: 'sent' | 'due' | 'failed' = 'failed';
+  let newStatus = 'failed' as 'sent' | 'due' | 'failed'; // assigned inside the transaction callback; the cast stops TS narrowing it to 'failed'
   await withTx(async (db) => {
     if (ok) {
       const open = await query<{ n: string }>(`SELECT count(*) AS n FROM manual_shares WHERE reminder_id = $1 AND status = 'due'`, [rem.id], db);

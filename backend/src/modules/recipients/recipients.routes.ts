@@ -38,7 +38,7 @@ recipientsRouter.post('/', requirePermission('recipients.manage'), validate({ bo
     `INSERT INTO recipients (name, type, channel, phone_e164, wa_group_id, is_active, notes, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${COLS}`,
     [b.name, b.type, b.channel, b.phone_e164, b.wa_group_id, b.is_active, b.notes, req.admin!.id],
   );
-  await logActivity({ action: 'recipient.create', entityType: 'recipient', entityId: r.rows[0].id, metadata: { name: b.name, channel: b.channel } }, req);
+  await logActivity({ action: 'recipient.create', entityType: 'recipient', entityId: r.rows[0]!.id, metadata: { name: b.name, channel: b.channel } }, req);
   res.status(201).json({ recipient: r.rows[0] });
 }));
 
