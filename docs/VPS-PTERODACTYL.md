@@ -498,7 +498,7 @@ Hanya **file baru**; konfigurasi panel tidak disentuh. Pastikan bagian 0 sudah d
 ### 7.1 Tahap 1: HTTP saja (untuk verifikasi domain)
 ```bash
 sudo mkdir -p /var/www/html
-sudo tee /etc/nginx/sites-available/api.classreminder.my.id.conf >/dev/null <<'EOF'
+sudo tee /etc/nginx/sites-available/reminder-api.conf >/dev/null <<'EOF'
 server {
     listen 80;
     listen [::]:80;
@@ -508,7 +508,7 @@ server {
     location / { return 301 https://$host$request_uri; }
 }
 EOF
-sudo ln -s /etc/nginx/sites-available/api.classreminder.my.id.conf /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/reminder-api.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 Hasil yang diharapkan: `syntax is ok` dan `test is successful`. Kalau `nginx -t` gagal, **hapus symlink** (rollback) sebelum melanjutkan.
@@ -522,7 +522,7 @@ Prasyarat: DNS sudah benar (bagian 2) dan port 80 terbuka dari internet.
 
 ### 7.3 Tahap 2: HTTPS
 ```bash
-sudo tee /etc/nginx/sites-available/api.classreminder.my.id.conf >/dev/null <<'EOF'
+sudo tee /etc/nginx/sites-available/reminder-api.conf >/dev/null <<'EOF'
 server {
     listen 80;
     listen [::]:80;
@@ -533,8 +533,8 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
     server_name api.classreminder.my.id;
 
     ssl_certificate     /etc/letsencrypt/live/api.classreminder.my.id/fullchain.pem;
@@ -562,11 +562,13 @@ EOF
 # isi target dengan hasil verifikasi nyata dari 5.2 (variabel BACKEND, mis. 172.18.0.1:4000 atau 127.0.0.1:4000).
 # Variabel shell hilang di sesi SSH baru: bila kosong, jalankan ulang 5.2 sampai echo "BACKEND=..." terisi.
 echo "BACKEND=$BACKEND"; test -n "$BACKEND"
-sudo sed -i "s|__BACKEND__|$BACKEND|" /etc/nginx/sites-available/api.classreminder.my.id.conf
-grep -n "proxy_pass" /etc/nginx/sites-available/api.classreminder.my.id.conf     # harus berisi alamat, bukan __BACKEND__
+sudo sed -i "s|__BACKEND__|$BACKEND|" /etc/nginx/sites-available/reminder-api.conf
+grep -n "proxy_pass" /etc/nginx/sites-available/reminder-api.conf     # harus berisi alamat, bukan __BACKEND__
 sudo nginx -t && sudo systemctl reload nginx
 ```
-`ssl_session_cache` memakai nama zona unik (`SSL_reminder_api`) agar tidak bentrok dengan zona milik site panel. Kalau Nginx ≥ 1.25.1, `listen ... http2` hanya memunculkan peringatan deprecated, bukan error.
+`ssl_session_cache` memakai nama zona unik (`SSL_reminder_api`) agar tidak bentrok dengan zona milik site panel. Dua pilihan di atas disengaja, berdasarkan hasil `nginx -T` di VPS Nawasena (site yang ada: `default` dan `pterodactyl.conf`; di port 443 hanya panel):
+- Nama file `reminder-api.conf` diurutkan setelah `pterodactyl.conf`. Nginx memuat `sites-enabled/*` berurutan, dan server pertama untuk sebuah port tanpa `default_server` menjadi server bawaan port itu. Nama yang diawali `api...` akan dimuat lebih dulu dan mengambil alih peran itu dari panel untuk permintaan HTTPS ke host yang tidak dikenal.
+- Tidak memakai `http2` pada `listen`. Di Nginx 1.24 (Ubuntu 24.04) parameter itu berlaku untuk seluruh soket `443`, jadi akan ikut mengubah perilaku panel.
 
 `TRUST_PROXY=1` cocok dengan satu lapis proxy ini. Kalau suatu saat Cloudflare dipasang di depan Nginx, ubah ke `2` dan sesuaikan header.
 
@@ -639,7 +641,7 @@ Rollback berjalan dari yang terbaru ke yang terlama. Layanan lama tidak pernah d
 |---|---|
 | Frontend rusak setelah ganti `VITE_API_URL` | Vercel → Deployments → deployment lama → **Instant Rollback**, atau kembalikan variabel lalu Redeploy. |
 | Backend gagal start setelah update | Unggah zip commit sebelumnya (`git archive --format=zip -o old.zip <commit-lama>:backend`), setup tanpa seed (5.8), start. Migrasi hanya menambah tabel/kolom; jangan membuang skema tanpa cadangan (3.3). |
-| Nginx bermasalah | `sudo rm /etc/nginx/sites-enabled/api.classreminder.my.id.conf && sudo nginx -t && sudo systemctl reload nginx`. Cadangan penuh: `$HOME/reminder-deploy/nginx-backup-<tanggal>`. Site panel tidak terpengaruh. |
+| Nginx bermasalah | `sudo rm /etc/nginx/sites-enabled/reminder-api.conf && sudo nginx -t && sudo systemctl reload nginx`. Cadangan penuh: `$HOME/reminder-deploy/nginx-backup-<tanggal>`. Site panel tidak terpengaruh. |
 | Sertifikat salah | `sudo certbot delete --cert-name api.classreminder.my.id` (setelah site dilepas dari Nginx). |
 | Redis bermasalah | `sudo docker stop reminder-redis`. Pengingat tetap ada di Postgres; scheduler memuat ulang antrean dari tabel `scheduled_jobs` tiap 60 detik setelah Redis hidup. |
 | Postgres bermasalah | Restore dari `.dump` terbaru (3.3) ke database baru, arahkan `DATABASE_URL`, restart server. |
