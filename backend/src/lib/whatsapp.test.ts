@@ -1,7 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
-import { buildPayload, missingConfig, sendWhatsApp, templateParam, toWaNumber, verifySignature, type WhatsAppConfig } from './whatsapp';
-import { parseStatuses } from '../modules/webhooks/whatsapp.routes';
+import { buildPayload, missingConfig, parseStatuses, sendWhatsApp, templateParam, toWaNumber, verifySignature, type WhatsAppConfig } from './whatsapp';
 
 const cfg: WhatsAppConfig = { WHATSAPP_ACCESS_TOKEN: 'tok', WHATSAPP_PHONE_NUMBER_ID: '123', WHATSAPP_API_VERSION: 'v23.0', WHATSAPP_TEMPLATE_LANG: 'id' };
 const resp = (status: number, body: unknown) => Promise.resolve(new Response(JSON.stringify(body), { status }));

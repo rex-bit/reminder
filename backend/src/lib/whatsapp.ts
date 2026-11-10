@@ -99,3 +99,40 @@ export function verifySignature(rawBody: Buffer, header: string | undefined, app
   const b = Buffer.from(expected, 'hex');
   return a.length === b.length && timingSafeEqual(a, b);
 }
+
+export interface StatusEvent {
+  waMessageId: string;
+  status: 'sent' | 'delivered' | 'read' | 'failed';
+  timestamp: string;
+  errorCode?: string | undefined;
+  errorMessage?: string | undefined;
+}
+
+interface MetaStatus {
+  id?: string;
+  status?: string;
+  timestamp?: string;
+  errors?: { code?: number; title?: string; message?: string }[];
+}
+
+export function parseStatuses(payload: unknown): StatusEvent[] {
+  const out: StatusEvent[] = [];
+  const entries = (payload as { entry?: { changes?: { value?: { statuses?: MetaStatus[] } }[] }[] })?.entry ?? [];
+  for (const entry of entries) {
+    for (const change of entry.changes ?? []) {
+      for (const s of change.value?.statuses ?? []) {
+        if (!s.id || !s.status || !['sent', 'delivered', 'read', 'failed'].includes(s.status)) continue;
+        const secs = Number(s.timestamp);
+        const e = s.errors?.[0];
+        out.push({
+          waMessageId: s.id,
+          status: s.status as StatusEvent['status'],
+          timestamp: new Date(Number.isFinite(secs) && secs > 0 ? secs * 1000 : Date.now()).toISOString(),
+          errorCode: e?.code !== undefined ? String(e.code).slice(0, 40) : undefined,
+          errorMessage: (e?.message ?? e?.title)?.slice(0, 500),
+        });
+      }
+    }
+  }
+  return out;
+}

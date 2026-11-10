@@ -137,7 +137,7 @@ export function ReminderPreviewPage() {
                     <div className="body-s muted">{t('Attempt {n} · {time}', { n: d.attempt, time: fmtDateTime(d.sent_at ?? d.created_at, r.timezone) })}</div>
                     {d.error_message && <div className="body-s" style={{ color: 'var(--md-error)' }}>{d.error_code ? `${d.error_code}: ` : ''}{d.error_message}</div>}
                   </div>
-                  <Badge status={d.status} />
+                  <Badge status={d.status}>{t(WA_LABEL[d.status] ?? d.status)}</Badge>
                 </div>))}</div>}
           </Card>
         </div>

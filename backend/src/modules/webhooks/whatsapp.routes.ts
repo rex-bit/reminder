@@ -3,8 +3,8 @@ import express, { Router } from 'express';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { asyncHandler } from '../../http/errors';
-import { verifySignature } from '../../lib/whatsapp';
-import { applyStatuses, type StatusEvent } from '../deliveries/status.service';
+import { parseStatuses, verifySignature } from '../../lib/whatsapp';
+import { applyStatuses } from '../deliveries/status.service';
 
 /** Meta webhook. Mounted BEFORE express.json because the signature is computed over the raw bytes. */
 export const whatsappWebhook = Router();
@@ -25,35 +25,6 @@ whatsappWebhook.get('/', (req, res) => {
   }
   res.sendStatus(403);
 });
-
-interface MetaStatus {
-  id?: string;
-  status?: string;
-  timestamp?: string;
-  errors?: { code?: number; title?: string; message?: string }[];
-}
-
-export function parseStatuses(payload: unknown): StatusEvent[] {
-  const out: StatusEvent[] = [];
-  const entries = (payload as { entry?: { changes?: { value?: { statuses?: MetaStatus[] } }[] }[] })?.entry ?? [];
-  for (const entry of entries) {
-    for (const change of entry.changes ?? []) {
-      for (const s of change.value?.statuses ?? []) {
-        if (!s.id || !s.status || !['sent', 'delivered', 'read', 'failed'].includes(s.status)) continue;
-        const secs = Number(s.timestamp);
-        const e = s.errors?.[0];
-        out.push({
-          waMessageId: s.id,
-          status: s.status as StatusEvent['status'],
-          timestamp: new Date(Number.isFinite(secs) && secs > 0 ? secs * 1000 : Date.now()).toISOString(),
-          errorCode: e?.code !== undefined ? String(e.code).slice(0, 40) : undefined,
-          errorMessage: (e?.message ?? e?.title)?.slice(0, 500),
-        });
-      }
-    }
-  }
-  return out;
-}
 
 whatsappWebhook.post(
   '/',

@@ -1,13 +1,8 @@
 import { query, withTx } from '../../db/pool';
+import type { StatusEvent } from '../../lib/whatsapp';
 import { logActivity } from '../activity/activity.service';
 
-export interface StatusEvent {
-  waMessageId: string;
-  status: 'sent' | 'delivered' | 'read' | 'failed';
-  timestamp: string;
-  errorCode?: string | undefined;
-  errorMessage?: string | undefined;
-}
+export type { StatusEvent };
 
 /**
  * Applies WhatsApp delivery statuses. Webhooks are at-least-once and can arrive out of order, so a status only moves
