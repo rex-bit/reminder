@@ -19,24 +19,35 @@ export function buildMessage(r: Pick<Reminder, 'title' | 'kind' | 'reminder_date
   if (r.custom_message && r.custom_message.trim()) return r.custom_message;
   const c = r.content;
   const out: string[] = [];
-  out.push(r.kind === 'emergency' ? `🚨 *PENGUMUMAN DARURAT*` : `📌 *${r.title || 'Pengingat'}*`);
-  if (r.kind === 'emergency' && r.title) out.push(`*${r.title}*`);
-  out.push(`🗓️ ${longDate(r.reminder_date)}`);
-  if (c.uniform.trim()) out.push('', `👕 *Seragam*`, c.uniform.trim());
+  if (r.kind === 'emergency') {
+    out.push('🚨 *PENGUMUMAN DARURAT*');
+    if (r.title) out.push(`*${r.title}*`);
+  } else out.push('‼️*REMINDER*‼️');
+  out.push(longDate(r.reminder_date));
+  if (c.uniform.trim()) out.push('', '👔*SERAGAM*', c.uniform.trim());
   if (c.subjects.length) {
-    out.push('', `📚 *Jadwal Pelajaran*`);
-    c.subjects.forEach((s, i) => out.push(`${i + 1}. ${[s.time, s.subject, s.teacher ? `(${s.teacher})` : ''].filter(Boolean).join(' ')}`));
+    out.push('', '📚*MAPEL*');
+    let n = 0;
+    c.subjects.forEach((s) => {
+      const time = s.time ? ` (${s.time})` : '';
+      if (/^\s*istirahat\b/i.test(s.subject)) out.push(`${s.subject}${time}`); // breaks are listed but not numbered
+      else out.push(`${++n}.${s.subject}${s.teacher ? ` - ${s.teacher}` : ''}${time}`);
+    });
   }
   if (c.homework.length) {
-    out.push('', `📝 *PR / Tugas*`);
-    c.homework.forEach((h) => out.push(`• ${h.subject}: ${h.task}${h.due ? ` (kumpul ${h.due})` : ''}`));
+    out.push('', '📝*TUGAS*');
+    c.homework.forEach((h) => {
+      out.push(`• ${h.subject} : ${h.task}`);
+      if (h.due) out.push(`*deadline ${h.due}*`);
+    });
   }
   if (c.piket.length) {
-    out.push('', `🧹 *Piket*`);
-    c.piket.forEach((p) => out.push(`• ${p.name}${p.area ? ` - ${p.area}` : ''}`));
+    out.push('', '🧹*PIKET*');
+    c.piket.forEach((p, i) => out.push(`${i + 1}.${p.name}${p.area ? ` - ${p.area}` : ''}`));
   }
-  if (c.notes.trim()) out.push('', `🗒️ *Catatan*`, c.notes.trim());
-  if (c.announcements.trim()) out.push('', `📢 *Pengumuman*`, c.announcements.trim());
+  // Notes and announcements share one section, as in the class's own template.
+  const notes = [c.notes.trim(), c.announcements.trim()].filter(Boolean);
+  if (notes.length) out.push('', '📌*CATATAN*', ...notes);
   return out.join('\n');
 }
 
