@@ -30,10 +30,17 @@ export function buildMessage(r: { title: string; kind: string; reminder_date: st
   if (c.subjects?.length) {
     out.push('', '📚*MAPEL*');
     let n = 0;
+    let prev = '';
     c.subjects.forEach((s) => {
       const time = s.time ? ` (${s.time})` : '';
+      const key = s.subject.trim().toLowerCase();
+      const teacher = s.teacher ? ` - ${s.teacher}` : '';
       if (/^\s*istirahat\b/i.test(s.subject)) out.push(`${s.subject}${time}`); // breaks are listed but not numbered
-      else out.push(`${++n}.${s.subject}${s.teacher ? ` - ${s.teacher}` : ''}${time}`);
+      else if (key === prev) out.push(`${s.subject}${teacher}${time}`); // same lesson continuing after a break keeps the earlier number
+      else {
+        out.push(`${++n}.${s.subject}${teacher}${time}`);
+        prev = key;
+      }
     });
   }
   if (c.homework?.length) {
