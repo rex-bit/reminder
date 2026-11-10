@@ -55,7 +55,7 @@ export function buildMessage(r: { title: string; kind: string; reminder_date: st
     c.piket.forEach((p, i) => out.push(`${i + 1}.${p.name}${p.area ? ` - ${p.area}` : ''}`));
   }
   // Notes and announcements share one section, as in the class's own template.
-  const notes = [c.notes?.trim(), c.announcements?.trim()].filter(Boolean);
+  const notes = [c.notes?.trim(), c.announcements?.trim()].filter((x): x is string => Boolean(x));
   if (notes.length) out.push('', '📌*CATATAN*', ...notes);
   return out.join('\n');
 }
