@@ -9,6 +9,7 @@ import { DuePage } from './pages/Due';
 import { DeliveryLogsPage } from './pages/DeliveryLogs';
 import { LoginPage } from './pages/Login';
 import { NoAccessPage } from './pages/NoAccess';
+import { PrivacyPage } from './pages/Privacy';
 import { ProfilePage } from './pages/Profile';
 import { PublicHomePage } from './pages/PublicHome';
 import { RecipientsPage } from './pages/Recipients';
@@ -44,6 +45,7 @@ export function App() {
         <Route path="/" element={<PublicHomePage />} />
         <Route path="/home" element={<PublicHomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="*" element={<NoAccessPage />} />
       </Routes>
     );
@@ -54,6 +56,7 @@ export function App() {
   return (
     <Routes>
       <Route path="home" element={<PublicHomePage />} />
+      <Route path="privacy" element={<PrivacyPage />} />
       <Route path="login" element={<Navigate to="/" replace />} />
       <Route element={<Shell />}>
         <Route index element={<Guard perm="reminders.read"><DashboardPage /></Guard>} />

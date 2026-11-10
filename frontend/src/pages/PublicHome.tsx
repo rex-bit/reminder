@@ -292,7 +292,7 @@ export function PublicHomePage() {
         )}
 
         {feed.error && d && <div className="banner error">{feed.error}</div>}
-        <p className="body-s muted" style={{ textAlign: 'center' }}>Halaman ini hanya untuk dibaca.</p>
+        <p className="body-s muted" style={{ textAlign: 'center' }}>Halaman ini hanya untuk dibaca. · <a href="/privacy">Privasi</a></p>
       </main>
       {look && <AppearanceSheet onClose={() => setLook(false)} />}
     </div>
