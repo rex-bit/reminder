@@ -65,12 +65,22 @@ export interface Reminder {
   scheduled_at: string | null;
   recurrence: Recurrence;
   recurrence_until: string | null;
+  delivery_method: DeliveryMethod;
+  /** Latest website-push run for this reminder (null until one happened). */
+  push_delivery: { status: 'sending' | 'sent' | 'failed' | 'skipped'; devices_total: number; devices_sent: number; devices_failed: number; error_message: string | null; finished_at: string | null } | null;
   sent_at: string | null;
   recipient_ids: string[];
   /** Manual-share recipients of this occurrence; `done` once an admin marked it as sent. */
   manual_shares: { recipient_id: string; name: string; done: boolean }[];
   created_at: string;
   updated_at: string;
+}
+
+export type DeliveryMethod = 'whatsapp' | 'push' | 'both';
+
+export interface DeliveryConfig {
+  whatsapp: { configured: boolean; missing: string[]; template: boolean; webhook: boolean };
+  push: { configured: boolean };
 }
 
 export interface ReminderInput {
@@ -83,6 +93,7 @@ export interface ReminderInput {
   timezone: string;
   recurrence: Recurrence;
   recurrence_until: string | null;
+  delivery_method: DeliveryMethod;
   recipient_ids: string[];
 }
 

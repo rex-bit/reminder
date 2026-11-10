@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
-import { recipientsApi, remindersApi, settingsApi, templatesApi } from '../api/endpoints';
-import { EMPTY_CONTENT, type Reminder, type ReminderContent, type ReminderInput, type ReminderKind, type Recurrence } from '../api/types';
+import { deliveryApi, recipientsApi, remindersApi, settingsApi, templatesApi } from '../api/endpoints';
+import { EMPTY_CONTENT, type DeliveryMethod, type Reminder, type ReminderContent, type ReminderInput, type ReminderKind, type Recurrence } from '../api/types';
 import { useAuth } from '../auth/AuthProvider';
 import { buildMessage, TIMEZONES, todayIso } from '../lib/format';
 import { useAsync } from '../lib/useAsync';
@@ -25,6 +25,13 @@ export function ReminderFormPage() {
   const existing = useAsync<Reminder | null>((s) => (id ? remindersApi.get(id, s) : Promise.resolve(null)), [id]);
   const recipients = useAsync((s) => (can('recipients.read') ? recipientsApi.list(s) : Promise.resolve([])), []);
   const templates = useAsync((s) => (can('templates.read') ? templatesApi.list(s) : Promise.resolve([])), []);
+  const deliveryCfg = useAsync(async (s) => {
+    try {
+      return await deliveryApi.config(s);
+    } catch {
+      return null;
+    }
+  }, []);
   const defaults = useAsync(async (s) => {
     try {
       return await settingsApi.get(s);
@@ -42,6 +49,7 @@ export function ReminderFormPage() {
   const [tz, setTz] = useState(browserTz);
   const [recurrence, setRecurrence] = useState<Recurrence>('none');
   const [until, setUntil] = useState('');
+  const [method, setMethod] = useState<DeliveryMethod>('both');
   const [rids, setRids] = useState<string[]>([]);
   const [busy, setBusy] = useState<'draft' | 'schedule' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -61,6 +69,7 @@ export function ReminderFormPage() {
     setTz(r.timezone);
     setRecurrence(r.recurrence);
     setUntil(r.recurrence_until ?? '');
+    setMethod(r.delivery_method);
     setRids(r.recipient_ids);
   }, [existing.data]);
 
@@ -78,7 +87,7 @@ export function ReminderFormPage() {
     else if (title.length > 160) e.title = t('Max 160 characters');
     if (!date) e.date = t('Date is required');
     if (recurrence !== 'none' && until && until < date) e.until = t('Must be on or after the reminder date');
-    if (forSchedule && rids.length === 0) e.recipients = t('Choose at least one recipient to schedule');
+    if (forSchedule && method !== 'push' && rids.length === 0) e.recipients = t('Choose at least one recipient to schedule');
     if (custom !== null && !custom.trim()) e.custom = t('Custom message cannot be empty');
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -88,7 +97,7 @@ export function ReminderFormPage() {
     if (!validate(forSchedule)) return;
     const body: ReminderInput = {
       title: title.trim(), kind, reminder_date: date, content, custom_message: custom,
-      template_id: templateId || null, timezone: tz, recurrence, recurrence_until: recurrence === 'none' || !until ? null : until, recipient_ids: rids,
+      template_id: templateId || null, timezone: tz, recurrence, recurrence_until: recurrence === 'none' || !until ? null : until, delivery_method: method, recipient_ids: rids,
     };
     setBusy(forSchedule ? 'schedule' : 'draft');
     setFormError(null);
@@ -152,6 +161,21 @@ export function ReminderFormPage() {
           <ContentEditor content={content} onChange={setContent} />
 
           <Card variant="outlined">
+            <h3 className="title-m">{t('Delivery method')}</h3>
+            <Segmented<DeliveryMethod> label={t('Delivery method')} value={method} onChange={setMethod} options={[{ value: 'whatsapp', label: t('WhatsApp automatic send') }, { value: 'push', label: t('Website push notification') }, { value: 'both', label: t('Both') }]} />
+            {method !== 'push' && deliveryCfg.data && !deliveryCfg.data.whatsapp.configured && (
+              <div className="banner" role="status">{t('WhatsApp Cloud API is not configured on the server (missing: {vars}). Messages will fail until it is set up.', { vars: deliveryCfg.data.whatsapp.missing.join(', ') })}</div>
+            )}
+            {method !== 'push' && deliveryCfg.data?.whatsapp.configured && !deliveryCfg.data.whatsapp.template && (
+              <div className="banner" role="status">{t('No approved WhatsApp template is set (WHATSAPP_TEMPLATE_NAME). Free-form messages are only delivered to people who messaged your number in the last 24 hours.')}</div>
+            )}
+            {method !== 'whatsapp' && deliveryCfg.data && !deliveryCfg.data.push.configured && (
+              <div className="banner" role="status">{t('Web Push is not configured on the server (VAPID keys). No notification can be sent yet.')}</div>
+            )}
+            <p className="body-s muted">{method === 'push' ? t('Sent as a notification to every device that enabled notifications. No recipients needed.') : method === 'whatsapp' ? t('Sent automatically through the WhatsApp Business Cloud API at the scheduled time.') : t('Sent through WhatsApp and as a notification at the scheduled time.')}</p>
+          </Card>
+
+          {method !== 'push' && <Card variant="outlined">
             <h3 className="title-m">{t('Recipients')}</h3>
             {recipients.loading ? <LoadingList rows={2} /> : recipients.error ? <ErrorState message={recipients.error} onRetry={recipients.reload} /> : activeRecipients.length === 0 ? (
               <p className="body-m muted">{t('No active recipients yet. Add some on the Recipients page.')}</p>
@@ -164,7 +188,7 @@ export function ReminderFormPage() {
               </div>
             )}
             {errors.recipients && <p className="body-s" style={{ color: 'var(--md-error)' }}>{errors.recipients}</p>}
-          </Card>
+          </Card>}
 
           <Card variant="outlined">
             <h3 className="title-m">{t('Recurrence')}</h3>

@@ -11,6 +11,8 @@ import { EmptyState, ErrorState, LoadingList } from '../ui/states';
 import { ScheduleDialog } from './ScheduleDialog';
 import { t } from '../i18n';
 
+const WA_LABEL: Record<string, string> = { queued: 'Scheduled', accepted: 'Sent', sent: 'Sent', delivered: 'Delivered', read: 'Read', failed: 'Failed' };
+
 export function ReminderPreviewPage() {
   const { id = '' } = useParams();
   const nav = useNavigate();
@@ -85,7 +87,7 @@ export function ReminderPreviewPage() {
         {editable && can('reminders.update') && <Button variant="tonal" icon="edit" onClick={() => nav(`/reminders/${r.id}/edit`)}>{t('Edit')}</Button>}
         {can('schedule.manage') && (r.status === 'draft' || r.status === 'pending') && <Button variant="tonal" icon="schedule" onClick={() => setScheduling(true)}>{r.status === 'pending' ? t('Reschedule') : t('Schedule')}</Button>}
         {can('schedule.manage') && r.status === 'pending' && <Button variant="outlined" icon="cancel" loading={busy === 'cancel'} onClick={() => act('cancel', t('Schedule cancelled'), () => remindersApi.cancel(r.id))}>{t('Cancel schedule')}</Button>}
-        {can('reminders.send') && (r.status === 'draft' || r.status === 'pending') && r.recipient_ids.length > 0 && <Button icon="send" loading={busy === 'send'} onClick={sendNow}>{t('Send now')}</Button>}
+        {can('reminders.send') && (r.status === 'draft' || r.status === 'pending') && (r.delivery_method === 'push' || r.recipient_ids.length > 0) && <Button icon="send" loading={busy === 'send'} onClick={sendNow}>{t('Send now')}</Button>}
         {can('reminders.send') && r.status === 'due' && <Button icon="check" loading={busy === 'mark'} onClick={async () => { if (await confirm({ title: t('Mark as sent?'), body: t('Confirm that you sent it on WhatsApp. This only records it.'), confirmLabel: t('Yes, I sent it') })) await act('mark', t('Marked as sent'), () => remindersApi.markSent(r.id)); }}>{t('Mark as sent')}</Button>}
         {can('reminders.send') && r.status === 'failed' && <Button icon="refresh" loading={busy === 'retry'} onClick={() => act('retry', t('Retry queued'), () => remindersApi.retryFailed(r.id))}>{t('Retry failed')}</Button>}
         {can('reminders.create') && <Button variant="outlined" icon="copy" onClick={async () => { try { const c = await remindersApi.duplicate(r.id); notify(t('Duplicated as draft')); nav(`/reminders/${c.id}/edit`); } catch (e) { notify(errorMessage(e), { kind: 'error' }); } }}>{t('Duplicate')}</Button>}
@@ -109,7 +111,22 @@ export function ReminderPreviewPage() {
 
           <Card variant="outlined">
             <h2 className="title-m">{t('Delivery')}</h2>
-            {!can('logs.delivery') ? <p className="body-m muted">{t('You do not have permission to view delivery logs.')}</p>
+            {r.delivery_method !== 'whatsapp' && (
+              <div className="list-item">
+                <div className="grow">
+                  <div className="title-s">{t('Website push notification')}</div>
+                  <div className="body-s muted">
+                    {!r.push_delivery ? t('Scheduled')
+                      : r.push_delivery.status === 'sent' ? t('{sent} of {total} devices', { sent: r.push_delivery.devices_sent, total: r.push_delivery.devices_total })
+                      : r.push_delivery.error_message ?? ''}
+                  </div>
+                </div>
+                <Badge status={r.push_delivery?.status === 'skipped' ? 'failed' : (r.push_delivery?.status ?? 'queued')}>
+                  {t(!r.push_delivery ? 'Scheduled' : r.push_delivery.status === 'sent' ? 'Sent' : r.push_delivery.status === 'sending' ? 'Sending' : 'Not sent')}
+                </Badge>
+              </div>
+            )}
+            {r.delivery_method === 'push' ? null : !can('logs.delivery') ? <p className="body-m muted">{t('You do not have permission to view delivery logs.')}</p>
               : deliveries.loading && !deliveries.data ? <LoadingList rows={2} />
               : deliveries.error ? <ErrorState message={deliveries.error} onRetry={deliveries.reload} />
               : (deliveries.data ?? []).length === 0 ? <EmptyState icon="mail" title={t('No deliveries yet')} hint={t('Statuses come from WhatsApp webhooks after the message is sent.')} />
@@ -131,6 +148,7 @@ export function ReminderPreviewPage() {
             <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px' }}>
               <dt className="muted">{t('Send time')}</dt><dd style={{ margin: 0 }}>{fmtDateTime(r.scheduled_at, r.timezone)}</dd>
               <dt className="muted">{t('Timezone')}</dt><dd style={{ margin: 0 }}>{r.timezone}</dd>
+              <dt className="muted">{t('Delivery method')}</dt><dd style={{ margin: 0 }}>{r.delivery_method === 'whatsapp' ? t('WhatsApp automatic send') : r.delivery_method === 'push' ? t('Website push notification') : t('WhatsApp + website push')}</dd>
               <dt className="muted">{t('Repeats')}</dt><dd style={{ margin: 0 }}>{r.recurrence === 'none' ? t('No') : r.recurrence_until ? t('{recurrence} until {date}', { recurrence: r.recurrence, date: r.recurrence_until }) : r.recurrence}</dd>
               <dt className="muted">{t('Sent at')}</dt><dd style={{ margin: 0 }}>{fmtDateTime(r.sent_at, r.timezone)}</dd>
               <dt className="muted">{t('Recipients')}</dt><dd style={{ margin: 0 }}>{names.length ? names.map((n) => n.name).join(', ') : r.recipient_ids.length ? t('{count} selected', { count: r.recipient_ids.length }) : t('None')}</dd>

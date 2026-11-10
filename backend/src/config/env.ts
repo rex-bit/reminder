@@ -34,9 +34,19 @@ const schema = z
     OWNER_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
     OWNER_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(12).max(72).optional()),
 
+    // Shared secret for the legacy server-to-server status endpoint (/internal/whatsapp/statuses). Optional.
     BOT_API_KEY: z.preprocess(emptyToUndefined, z.string().min(32).optional()),
-    // Base URL of the WhatsApp bot service (Phase 4). Without it, deliveries fail with `bot_not_configured`; nothing is simulated.
-    BOT_SERVICE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+
+    // --- WhatsApp Business Cloud API (official, Meta). Without these, WhatsApp deliveries fail with `whatsapp_not_configured`; nothing is simulated. ---
+    WHATSAPP_ACCESS_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
+    WHATSAPP_PHONE_NUMBER_ID: z.preprocess(emptyToUndefined, z.string().regex(/^\d+$/, 'digits only').optional()),
+    WHATSAPP_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default('v23.0'),
+    // Approved message template with ONE body variable ({{1}} = the reminder text). Needed to message people outside the 24-hour window.
+    WHATSAPP_TEMPLATE_NAME: z.preprocess(emptyToUndefined, z.string().optional()),
+    WHATSAPP_TEMPLATE_LANG: z.string().default('id'),
+    // Webhook (delivery statuses): the verify token you type in Meta, and the App Secret used to check each request's signature.
+    WHATSAPP_VERIFY_TOKEN: z.preprocess(emptyToUndefined, z.string().min(16).optional()),
+    WHATSAPP_APP_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
 
     // --- Web Push (notifications to admins). Generate: npx web-push generate-vapid-keys ---
     VAPID_PUBLIC_KEY: z.preprocess(emptyToUndefined, z.string().optional()),

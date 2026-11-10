@@ -5,6 +5,9 @@ import { validate } from '../../http/validate';
 import { query } from '../../db/pool';
 import { authenticate } from '../../middleware/auth';
 import { requirePermission } from '../../middleware/rbac';
+import { env } from '../../config/env';
+import { missingConfig } from '../../lib/whatsapp';
+import { pushEnabled } from '../push/push.service';
 
 export const deliveriesRouter = Router();
 
@@ -13,6 +16,20 @@ const listQuery = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   status: z.enum(['queued', 'accepted', 'sent', 'delivered', 'read', 'failed']).optional(),
   reminderId: z.string().uuid().optional(),
+});
+
+/** Which delivery methods are actually usable right now (the form uses this to explain missing configuration). */
+deliveriesRouter.get('/config', authenticate, requirePermission('reminders.read'), (_req, res) => {
+  const missing = missingConfig(env);
+  res.json({
+    whatsapp: {
+      configured: missing.length === 0,
+      missing,
+      template: Boolean(env.WHATSAPP_TEMPLATE_NAME),
+      webhook: Boolean(env.WHATSAPP_VERIFY_TOKEN && env.WHATSAPP_APP_SECRET),
+    },
+    push: { configured: pushEnabled },
+  });
 });
 
 deliveriesRouter.get('/', authenticate, requirePermission('logs.delivery'), validate({ query: listQuery }), asyncHandler(async (req, res) => {

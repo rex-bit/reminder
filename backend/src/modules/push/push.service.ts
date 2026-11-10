@@ -88,3 +88,47 @@ export async function notifyPublic(payload: PushPayload): Promise<number> {
   }
   return ok;
 }
+
+export interface PushRunResult {
+  total: number;
+  sent: number;
+  failed: number;
+  /** Why nothing was sent, when total is 0. */
+  reason?: 'not_configured' | 'no_devices';
+}
+
+/**
+ * The scheduled push of one reminder: every admin device holding `reminders.read`, plus (when `publicPayload` is given)
+ * every device that enabled notifications on the class page. A browser that is both gets it once.
+ * Counts are real: `sent` is the number of devices whose push service accepted the message.
+ */
+export async function pushReminder(adminPayload: PushPayload, publicPayload: PushPayload | null): Promise<PushRunResult> {
+  if (!pushEnabled) return { total: 0, sent: 0, failed: 0, reason: 'not_configured' };
+  const targets: { sub: Sub; payload: PushPayload; table: SubTable }[] = [];
+
+  const admins = await query<Sub & { role_key: string }>(
+    `SELECT s.id, s.admin_id, s.endpoint, s.p256dh, s.auth, r.key AS role_key
+       FROM push_subscriptions s JOIN admins a ON a.id = s.admin_id JOIN roles r ON r.id = a.role_id
+      WHERE a.status = 'active' AND a.deleted_at IS NULL`,
+  );
+  const allowed = new Map<string, boolean>();
+  for (const sub of admins.rows) {
+    if (!allowed.has(sub.admin_id)) allowed.set(sub.admin_id, (await loadPermissionState(sub.admin_id, sub.role_key)).effective.has('reminders.read'));
+    if (allowed.get(sub.admin_id)) targets.push({ sub, payload: adminPayload, table: 'push_subscriptions' });
+  }
+  if (publicPayload) {
+    const pub = await query<Sub>(
+      `SELECT p.id, p.endpoint, p.p256dh, p.auth, NULL::uuid AS admin_id FROM public_push_subscriptions p
+        WHERE NOT EXISTS (SELECT 1 FROM push_subscriptions s WHERE s.endpoint = p.endpoint)`,
+    );
+    for (const sub of pub.rows) targets.push({ sub, payload: publicPayload, table: 'public_push_subscriptions' });
+  }
+  if (targets.length === 0) return { total: 0, sent: 0, failed: 0, reason: 'no_devices' };
+
+  let sent = 0;
+  for (let i = 0; i < targets.length; i += 20) {
+    const results = await Promise.all(targets.slice(i, i + 20).map((t) => deliver(t.sub, t.payload, t.table)));
+    sent += results.filter(Boolean).length;
+  }
+  return { total: targets.length, sent, failed: targets.length - sent };
+}

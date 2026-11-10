@@ -16,7 +16,9 @@ export const remindersRouter = Router();
 remindersRouter.use(authenticate);
 
 const SELECT = `SELECT r.id, r.title, r.kind, r.status, r.reminder_date, r.content, r.custom_message, r.template_id, r.timezone,
-  r.scheduled_at, r.recurrence, r.recurrence_until, r.sent_at, r.created_at, r.updated_at,
+  r.scheduled_at, r.recurrence, r.recurrence_until, r.sent_at, r.created_at, r.updated_at, r.delivery_method,
+  (SELECT json_build_object('status', pd.status, 'devices_total', pd.devices_total, 'devices_sent', pd.devices_sent, 'devices_failed', pd.devices_failed, 'error_message', pd.error_message, 'finished_at', pd.finished_at)
+     FROM push_deliveries pd WHERE pd.reminder_id = r.id ORDER BY pd.created_at DESC LIMIT 1) AS push_delivery,
   COALESCE(ARRAY(SELECT rr.recipient_id FROM reminder_recipients rr WHERE rr.reminder_id = r.id), '{}') AS recipient_ids,
   COALESCE((SELECT json_agg(json_build_object('recipient_id', rc.id, 'name', rc.name, 'done', ms.status = 'done') ORDER BY rc.name)
               FROM manual_shares ms JOIN recipients rc ON rc.id = ms.recipient_id WHERE ms.reminder_id = r.id), '[]'::json) AS manual_shares
@@ -40,8 +42,10 @@ async function setRecipients(db: Db, reminderId: string, ids: string[]) {
   }
 }
 
-/** Scheduling needs at least one active recipient. Cloud API recipients are sent automatically; manual-share ones become "due" tasks. */
+/** WhatsApp delivery needs at least one active recipient (push-only reminders go to subscribed devices instead). Cloud API recipients are sent automatically; manual-share ones become "due" tasks. */
 async function requireAnyRecipient(db: Db, reminderId: string) {
+  const method = await query<{ delivery_method: string }>(`SELECT delivery_method FROM reminders WHERE id = $1`, [reminderId], db);
+  if (method.rows[0]?.delivery_method === 'push') return;
   const res = await query(
     `SELECT count(*)::int AS n FROM reminder_recipients rr JOIN recipients r ON r.id = rr.recipient_id
       WHERE rr.reminder_id = $1 AND r.is_active AND r.deleted_at IS NULL`,
@@ -106,9 +110,9 @@ remindersRouter.post(
     const b = req.body as ReminderInput;
     const id = await withTx(async (db) => {
       const ins = await query<{ id: string }>(
-        `INSERT INTO reminders (title, kind, status, reminder_date, content, custom_message, template_id, timezone, recurrence, recurrence_until, created_by, updated_by)
-         VALUES ($1, $2, 'draft', $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $10) RETURNING id`,
-        [b.title, b.kind, b.reminder_date, JSON.stringify(b.content), b.custom_message, b.template_id, b.timezone, b.recurrence, b.recurrence_until, req.admin!.id],
+        `INSERT INTO reminders (title, kind, status, reminder_date, content, custom_message, template_id, timezone, recurrence, recurrence_until, delivery_method, created_by, updated_by)
+         VALUES ($1, $2, 'draft', $3, $4::jsonb, $5, $6, $7, $8, $9, $11::delivery_method, $10, $10) RETURNING id`,
+        [b.title, b.kind, b.reminder_date, JSON.stringify(b.content), b.custom_message, b.template_id, b.timezone, b.recurrence, b.recurrence_until, req.admin!.id, b.delivery_method],
         db,
       );
       const rid = ins.rows[0]!.id;
@@ -142,8 +146,8 @@ remindersRouter.patch(
       if (!EDITABLE.includes(cur.rows[0].status)) throw conflict(`A ${cur.rows[0].status} reminder cannot be edited. Duplicate it instead.`);
       await query(
         `UPDATE reminders SET title=$2, kind=$3, reminder_date=$4, content=$5::jsonb, custom_message=$6, template_id=$7, timezone=$8,
-           recurrence=$9, recurrence_until=$10, updated_by=$11 WHERE id=$1`,
-        [id, b.title, b.kind, b.reminder_date, JSON.stringify(b.content), b.custom_message, b.template_id, b.timezone, b.recurrence, b.recurrence_until, req.admin!.id],
+           recurrence=$9, recurrence_until=$10, updated_by=$11, delivery_method=$12::delivery_method WHERE id=$1`,
+        [id, b.title, b.kind, b.reminder_date, JSON.stringify(b.content), b.custom_message, b.template_id, b.timezone, b.recurrence, b.recurrence_until, req.admin!.id, b.delivery_method],
         db,
       );
       await setRecipients(db, id, b.recipient_ids);
@@ -180,8 +184,8 @@ remindersRouter.post(
     const src = req.params.id!;
     const newId = await withTx(async (db) => {
       const ins = await query<{ id: string }>(
-        `INSERT INTO reminders (title, kind, status, reminder_date, content, custom_message, template_id, timezone, recurrence, recurrence_until, source_reminder_id, created_by, updated_by)
-         SELECT left('Copy of ' || title, 160), kind, 'draft'::reminder_status, reminder_date, content, custom_message, template_id, timezone, recurrence, recurrence_until, id, $2, $2
+        `INSERT INTO reminders (title, kind, status, reminder_date, content, custom_message, template_id, timezone, recurrence, recurrence_until, delivery_method, source_reminder_id, created_by, updated_by)
+         SELECT left('Copy of ' || title, 160), kind, 'draft'::reminder_status, reminder_date, content, custom_message, template_id, timezone, recurrence, recurrence_until, delivery_method, id, $2, $2
            FROM reminders WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
         [src, req.admin!.id],
         db,

@@ -19,6 +19,7 @@ import { recipientsRouter } from './modules/recipients/recipients.routes';
 import { remindersRouter } from './modules/reminders/reminders.routes';
 import { settingsRouter } from './modules/settings/settings.routes';
 import { templatesRouter } from './modules/templates/templates.routes';
+import { whatsappWebhook } from './modules/webhooks/whatsapp.routes';
 
 export function createApp() {
   const app = express();
@@ -36,6 +37,8 @@ export function createApp() {
       maxAge: 600,
     }),
   );
+  // Before express.json: Meta's signature is computed over the raw request bytes.
+  app.use('/api/v1/webhooks/whatsapp', whatsappWebhook);
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 

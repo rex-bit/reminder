@@ -23,6 +23,7 @@ export const reminderInput = z
     custom_message: z.string().max(4000).nullable().default(null),
     template_id: z.string().uuid().nullable().default(null),
     timezone: z.string().refine(isValidTimezone, 'Invalid IANA timezone'),
+    delivery_method: z.enum(['whatsapp', 'push', 'both']).default('both'),
     recurrence: z.enum(['none', 'daily', 'weekly', 'monthly']).default('none'),
     recurrence_until: isoDate.nullable().default(null),
     recipient_ids: z.array(z.string().uuid()).max(100).default([]),

@@ -62,6 +62,10 @@ export const logsApi = {
   activity: (q: Q, signal?: AbortSignal) => list<ActivityLog>('/activity', q, signal),
 };
 
+export const deliveryApi = {
+  config: (signal?: AbortSignal) => api<import('./types').DeliveryConfig>('/delivery-logs/config', { signal }),
+};
+
 export const settingsApi = {
   get: (signal?: AbortSignal) => api<{ settings: AppSettings }>('/settings', { signal }).then((r) => r.settings),
   save: (s: Partial<AppSettings>) => api<{ settings: AppSettings }>('/settings', { method: 'PUT', body: s }).then((r) => r.settings),

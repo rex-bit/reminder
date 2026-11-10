@@ -6,7 +6,7 @@ import { buildMessage, type Content } from '../../lib/message';
 import { addToDate, utcToZoned, zonedToUtc } from '../../lib/time';
 import { logActivity } from '../activity/activity.service';
 import { isPublicEnabled, publicNotification } from '../public/public.service';
-import { notifyAdmins, notifyPublic } from '../push/push.service';
+import { notifyAdmins, pushReminder } from '../push/push.service';
 import { dispatch } from './dispatch';
 import type { DeliverJobData } from './queue';
 import { planJob, publishPlan, type Plan } from './schedule';
@@ -29,6 +29,7 @@ interface ReminderRow {
   scheduled_at: Date | null;
   recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
   recurrence_until: string | null;
+  delivery_method: 'whatsapp' | 'push' | 'both';
 }
 interface DeliveryRow {
   id: string;
@@ -61,12 +62,23 @@ export async function processDelivery(job: Job<DeliverJobData>): Promise<void> {
   const jobRow = claimed.rows[0];
 
   const rem = (await query<ReminderRow>(
-    `SELECT id, title, kind, status, reminder_date, content, custom_message, timezone, scheduled_at, recurrence, recurrence_until
+    `SELECT id, title, kind, status, reminder_date, content, custom_message, timezone, scheduled_at, recurrence, recurrence_until, delivery_method
        FROM reminders WHERE id = $1 AND deleted_at IS NULL`,
     [reminderId],
   )).rows[0];
   if (!rem || !['pending', 'failed'].includes(rem.status)) {
     await query(`UPDATE scheduled_jobs SET status = 'cancelled', finished_at = now() WHERE id = $1`, [jobRowId]);
+    return;
+  }
+
+  const wantsWhatsApp = rem.delivery_method !== 'push';
+  const wantsPush = rem.delivery_method !== 'whatsapp';
+
+  // Website push goes first and never throws: a WhatsApp problem must not block it (and vice versa).
+  let pushProblem: string | null = null;
+  if (wantsPush) pushProblem = await runPush(rem, (rem.scheduled_at ?? jobRow.run_at).getTime());
+  if (!wantsWhatsApp) {
+    await finalize(rem, jobRowId, pushProblem === null, pushProblem);
     return;
   }
 
@@ -115,9 +127,6 @@ export async function processDelivery(job: Job<DeliverJobData>): Promise<void> {
       ? ({ ok: false, retryable: false, code: 'groups_not_supported', message: 'Group messaging is not enabled for this WhatsApp number. Use manual sharing for groups.' } as const)
       : await dispatch({
       deliveryId: d.id,
-      // Same job (BullMQ retries after a lost response) => same key => the bot drops the duplicate.
-      // A manual "Retry failed" creates a new job row => new key => the message is really re-sent.
-      idempotencyKey: `${d.idempotency_key}:${jobRowId}`,
       body: d.message_body,
       recipient: { type: d.type, phone_e164: d.phone_e164, wa_group_id: d.wa_group_id },
     });
@@ -162,12 +171,6 @@ async function finalize(rem: ReminderRow, jobRowId: string, ok: boolean, error: 
     await logActivity({ action: ok ? `reminder.${newStatus}` : 'reminder.failed', entityType: 'reminder', entityId: rem.id, metadata: error ? { error } : {} }, undefined, db);
   });
   if (plan) await publishPlan(plan);
-  if (newStatus === 'sent') {
-    // Everyone who enabled notifications on the public class page. ('due' reminders notify them later, when an admin marks them as sent.)
-    if (await isPublicEnabled().catch(() => false)) {
-      await notifyPublic(publicNotification(rem)).catch((err) => logger.warn({ err }, 'public push failed'));
-    }
-  }
   if (newStatus === 'due') {
     await notifyAdmins('reminders.send', { title: `Perlu dikirim: ${rem.title}`, body: 'Ketuk untuk membuka dan kirim ke WhatsApp.', reminderId: rem.id, tag: `due-${rem.id}` }).catch((err) =>
       logger.warn({ err }, 'push notification failed'),
@@ -187,8 +190,8 @@ async function createNextOccurrence(db: Db, rem: ReminderRow): Promise<Plan | nu
   const wall = utcToZoned(rem.scheduled_at, rem.timezone);
   const nextRun = zonedToUtc(addToDate(wall.date, rem.recurrence), wall.time, rem.timezone);
   const ins = await query<{ id: string }>(
-    `INSERT INTO reminders (title, kind, status, reminder_date, content, custom_message, template_id, timezone, scheduled_at, recurrence, recurrence_until, source_reminder_id, created_by)
-     SELECT title, kind, 'pending'::reminder_status, $2::date, content, custom_message, template_id, timezone, $3::timestamptz, recurrence, recurrence_until, id, created_by FROM reminders WHERE id = $1
+    `INSERT INTO reminders (title, kind, status, reminder_date, content, custom_message, template_id, timezone, scheduled_at, recurrence, recurrence_until, delivery_method, source_reminder_id, created_by)
+     SELECT title, kind, 'pending'::reminder_status, $2::date, content, custom_message, template_id, timezone, $3::timestamptz, recurrence, recurrence_until, delivery_method, id, created_by FROM reminders WHERE id = $1
      RETURNING id`,
     [rem.id, nextDate, nextRun.toISOString()],
     db,
@@ -196,4 +199,50 @@ async function createNextOccurrence(db: Db, rem: ReminderRow): Promise<Plan | nu
   const newId = ins.rows[0]!.id;
   await query(`INSERT INTO reminder_recipients (reminder_id, recipient_id) SELECT $2, recipient_id FROM reminder_recipients WHERE reminder_id = $1`, [rem.id, newId], db);
   return planJob(db, newId, nextRun, 'send');
+}
+
+/**
+ * Sends the website push for this occurrence once. UNIQUE(reminder_id, run_key) makes BullMQ retries and WhatsApp retries
+ * harmless; only a previous failed/skipped push is attempted again. Returns a problem description, or null when it was sent.
+ */
+async function runPush(rem: ReminderRow, runKey: number): Promise<string | null> {
+  const claim = await query<{ id: string }>(
+    `INSERT INTO push_deliveries (reminder_id, run_key) VALUES ($1, $2)
+     ON CONFLICT (reminder_id, run_key) DO UPDATE SET status = 'sending', error_message = NULL, finished_at = NULL
+       WHERE push_deliveries.status IN ('failed', 'skipped')
+     RETURNING id`,
+    [rem.id, String(runKey)],
+  );
+  const id = claim.rows[0]?.id;
+  if (!id) {
+    const cur = await query<{ status: string; error_message: string | null }>(`SELECT status, error_message FROM push_deliveries WHERE reminder_id = $1 AND run_key = $2`, [rem.id, String(runKey)]);
+    return cur.rows[0]?.status === 'sent' ? null : (cur.rows[0]?.error_message ?? 'Push notification is already being sent');
+  }
+  try {
+    const pub = await isPublicEnabled().catch(() => false);
+    const payload = publicNotification(rem);
+    const res = await pushReminder({ ...payload, path: `reminders/${rem.id}` }, pub ? payload : null);
+    let status: 'sent' | 'failed' | 'skipped';
+    let error: string | null = null;
+    if (res.reason === 'not_configured') {
+      status = 'skipped';
+      error = 'Web Push is not configured (set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT)';
+    } else if (res.reason === 'no_devices') {
+      status = 'skipped';
+      error = 'No devices have notifications enabled yet';
+    } else if (res.sent === 0) {
+      status = 'failed';
+      error = `All ${res.total} push deliveries were rejected by the push service`;
+    } else status = 'sent';
+    await query(
+      `UPDATE push_deliveries SET status = $2, devices_total = $3, devices_sent = $4, devices_failed = $5, error_message = $6, finished_at = now() WHERE id = $1`,
+      [id, status, res.total, res.sent, res.failed, error],
+    );
+    return status === 'sent' ? null : error;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message.slice(0, 300) : 'push failed';
+    logger.warn({ err }, 'reminder push failed');
+    await query(`UPDATE push_deliveries SET status = 'failed', error_message = $2, finished_at = now() WHERE id = $1`, [id, msg]);
+    return msg;
+  }
 }
