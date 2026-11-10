@@ -60,6 +60,15 @@ export function DashboardPage() {
                 <span>{t('Open “To send” to share them on WhatsApp.')}</span>
               </Link>
             )}
+            <Card variant="outlined">
+              <h2 className="title-m">{t('Quick actions')}</h2>
+              <div className="row">
+                {can('reminders.create') && <LinkButton to="/reminders/new" icon="add">{t('New reminder')}</LinkButton>}
+                <LinkButton to="/due" variant="tonal" icon="send">{t('To send')}</LinkButton>
+                <LinkButton to="/scheduled" variant="tonal" icon="schedule">{t('Scheduled')}</LinkButton>
+                {can('templates.read') && <LinkButton to="/templates" variant="outlined" icon="template">{t('Templates')}</LinkButton>}
+              </div>
+            </Card>
             <div className="grid cols-auto">
               {STAT_ORDER.map((s) => (
                 <Card key={s.key} variant={s.key === 'failed' && d.counts.failed > 0 ? 'tonal-primary' : 'filled'}>

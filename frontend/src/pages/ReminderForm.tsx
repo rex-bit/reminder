@@ -69,7 +69,7 @@ export function ReminderFormPage() {
     setTz(r.timezone);
     setRecurrence(r.recurrence);
     setUntil(r.recurrence_until ?? '');
-    setMethod(r.delivery_method);
+    setMethod(r.delivery_method ?? 'both');
     setRids(r.recipient_ids);
   }, [existing.data]);
 

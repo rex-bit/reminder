@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Fab } from '../ui/controls';
 import { Icon, type IconName } from '../ui/Icon';
+import { MenuButton, MenuDivider, MenuItem } from '../ui/Menu';
+import { useTheme, type ThemeMode } from '../theme/ThemeProvider';
 import { BottomSheet } from '../ui/overlay';
 import { t } from '../i18n';
 
@@ -40,6 +42,60 @@ function NavItem({ item, onClick }: { item: Item; onClick?(): void }) {
   );
 }
 
+const MODES: { mode: ThemeMode; label: string; icon: IconName }[] = [
+  { mode: 'light', label: t('Light'), icon: 'light_mode' },
+  { mode: 'dark', label: t('Dark'), icon: 'dark_mode' },
+  { mode: 'system', label: t('System default'), icon: 'contrast' },
+];
+
+/** Top app bar: branding on the left; theme selector and account menu on the right. Gains a tonal elevation once the page scrolls. */
+function TopAppBar() {
+  const { admin, logout } = useAuth();
+  const { mode, setMode, resolved } = useTheme();
+  const nav = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 4);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
+  const initial = (admin?.display_name ?? '?').trim().charAt(0).toUpperCase() || '?';
+  return (
+    <header className="topbar" data-scrolled={scrolled}>
+      <div className="topbar-brand">
+        <img src="/logo.svg" alt="" width={28} height={28} />
+        <span className="title-l">ClassReminder</span>
+      </div>
+      <span className="grow" />
+      <MenuButton label={t('Theme')} trigger={<Icon name={resolved === 'dark' ? 'dark_mode' : 'light_mode'} />}>
+        {(close) =>
+          MODES.map((m) => (
+            <MenuItem key={m.mode} icon={m.icon} checked={mode === m.mode} onClick={() => { setMode(m.mode); close(); }}>
+              {m.label}
+            </MenuItem>
+          ))
+        }
+      </MenuButton>
+      <MenuButton label={t('Account')} trigger={<span className="avatar sm">{initial}</span>}>
+        {(close) => (
+          <>
+            <div className="menu-head">
+              <div className="title-s">{admin?.display_name}</div>
+              <div className="body-s muted">{admin?.email}</div>
+            </div>
+            <MenuDivider />
+            <MenuItem icon="person" onClick={() => { close(); nav('/profile'); }}>{t('Profile')}</MenuItem>
+            <MenuItem icon="settings" onClick={() => { close(); nav('/settings'); }}>{t('Settings')}</MenuItem>
+            <MenuDivider />
+            <MenuItem icon="logout" onClick={() => { close(); void logout(); }}>{t('Sign out')}</MenuItem>
+          </>
+        )}
+      </MenuButton>
+    </header>
+  );
+}
+
 export function Shell() {
   const { can, admin } = useAuth();
   const [more, setMore] = useState(false);
@@ -53,16 +109,19 @@ export function Shell() {
   return (
     <div className="shell">
       <nav className="nav-rail" aria-label={t('Main')}>
-        <div className="nav-rail-title title-m">Reminder</div>
+        <div className="nav-rail-title title-m">ClassReminder</div>
         {canCreate && <Fab to="/reminders/new" icon="add" label={t('New')} />}
         {items.map((i) => (
           <NavItem key={i.to} item={i} />
         ))}
       </nav>
 
-      <main className="shell-main" id="main">
-        <Outlet />
-      </main>
+      <div className="shell-col">
+        <TopAppBar />
+        <main className="shell-main" id="main">
+          <Outlet />
+        </main>
+      </div>
 
       {canCreate && !onForm && (
         <div className="mobile-fab">

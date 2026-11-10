@@ -118,4 +118,8 @@ export const idReminders: Record<string, string> = {
   'WhatsApp Cloud API is not configured on the server (missing: {vars}). Messages will fail until it is set up.': 'WhatsApp Cloud API belum dikonfigurasi di server (belum diisi: {vars}). Pesan akan gagal sampai disiapkan.',
   'No approved WhatsApp template is set (WHATSAPP_TEMPLATE_NAME). Free-form messages are only delivered to people who messaged your number in the last 24 hours.': 'Template WhatsApp yang disetujui belum diatur (WHATSAPP_TEMPLATE_NAME). Pesan bebas hanya sampai ke orang yang mengirim pesan ke nomormu dalam 24 jam terakhir.',
   'Web Push is not configured on the server (VAPID keys). No notification can be sent yet.': 'Web Push belum dikonfigurasi di server (kunci VAPID). Belum ada notifikasi yang bisa dikirim.',
+  // Top app bar and dashboard
+  'System default': 'Ikuti sistem',
+  'Account': 'Akun',
+  'Quick actions': 'Aksi cepat',
 };
