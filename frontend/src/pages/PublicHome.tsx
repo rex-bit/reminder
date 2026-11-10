@@ -16,14 +16,14 @@ import { EmptyState, ErrorState, LoadingList } from '../ui/states';
 type Tab = 'today' | 'later' | 'past';
 
 /** Round tonal container for an emoji/icon, the Material 3 "leading icon" look. */
-function TonalIcon({ children }: { children: ReactNode }) {
-  return <span className="ticon" aria-hidden="true">{children}</span>;
+function TonalIcon({ children, tone }: { children: ReactNode; tone?: 'p' | 's' | 't' }) {
+  return <span className={`ticon${tone ? ` tone-${tone}` : ''}`} aria-hidden="true">{children}</span>;
 }
 
-function Section({ icon, title, children }: { icon: string; title: string; children: ReactNode }) {
+function Section({ icon, title, tone, children }: { icon: string; title: string; tone?: 'p' | 's' | 't'; children: ReactNode }) {
   return (
     <div className="psec">
-      <TonalIcon>{icon}</TonalIcon>
+      <TonalIcon tone={tone}>{icon}</TonalIcon>
       <div className="grow" style={{ minWidth: 0 }}>
         <div className="label-l muted">{title}</div>
         {children}
@@ -70,12 +70,12 @@ function ReminderCard({ r, emergency }: { r: PublicReminder; emergency?: boolean
       ) : (
         <div className="stack" style={{ gap: 14 }}>
           {c.uniform.trim() && (
-            <Section icon="👕" title="Seragam">
+            <Section icon="👕" title="Seragam" tone="p">
               <p className="body-m">{c.uniform}</p>
             </Section>
           )}
           {c.subjects.length > 0 && (
-            <Section icon="📚" title="Jadwal pelajaran">
+            <Section icon="📚" title="Jadwal pelajaran" tone="s">
               <ol className="plist">
                 {c.subjects.map((s, i) => (
                   <li key={i}>
@@ -87,7 +87,7 @@ function ReminderCard({ r, emergency }: { r: PublicReminder; emergency?: boolean
             </Section>
           )}
           {c.homework.length > 0 && (
-            <Section icon="📝" title="PR / Tugas">
+            <Section icon="📝" title="PR / Tugas" tone="t">
               <ul className="plist">
                 {c.homework.map((h, i) => (
                   <li key={i}>
@@ -99,7 +99,7 @@ function ReminderCard({ r, emergency }: { r: PublicReminder; emergency?: boolean
             </Section>
           )}
           {c.piket.length > 0 && (
-            <Section icon="🧹" title="Piket">
+            <Section icon="🧹" title="Piket" tone="p">
               <div className="chips" style={{ marginTop: 4 }}>
                 {c.piket.map((p, i) => (
                   <span key={i} className="chip static">{p.name}{p.area ? ` · ${p.area}` : ''}</span>
@@ -108,12 +108,12 @@ function ReminderCard({ r, emergency }: { r: PublicReminder; emergency?: boolean
             </Section>
           )}
           {c.notes.trim() && (
-            <Section icon="🗒️" title="Catatan">
+            <Section icon="🗒️" title="Catatan" tone="s">
               <p className="body-m" style={{ whiteSpace: 'pre-wrap' }}>{c.notes}</p>
             </Section>
           )}
           {c.announcements.trim() && (
-            <Section icon="📢" title="Pengumuman">
+            <Section icon="📢" title="Pengumuman" tone="t">
               <p className="body-m" style={{ whiteSpace: 'pre-wrap' }}>{c.announcements}</p>
             </Section>
           )}
@@ -123,15 +123,32 @@ function ReminderCard({ r, emergency }: { r: PublicReminder; emergency?: boolean
   );
 }
 
-function Tile({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
+/** Compact "at a glance" number tile; each one has its own tonal color so the row reads as a set, not a wall. */
+function StatTile({ icon, value, label, tone }: { icon: string; value: string; label: string; tone: 'p' | 's' | 't' | 'n' }) {
   return (
-    <div className="tile">
-      <TonalIcon>{icon}</TonalIcon>
-      <div className="label-m muted">{label}</div>
-      <div className="title-m">{value}</div>
-      {hint && <div className="body-s muted">{hint}</div>}
+    <div className={`stile tone-${tone}`}>
+      <span className="stile-icon" aria-hidden="true">{icon}</span>
+      <span className="stile-value">{value}</span>
+      <span className="stile-label">{label}</span>
     </div>
   );
+}
+
+/** Lesson times like "10:55 - 12:15" -> the lesson happening now, or the next one today. */
+function lessonNow(subjects: ReminderContent['subjects'], tz: string): { now: boolean; subject: string; at: string } | null {
+  const parts = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(new Date()).split(':');
+  const cur = (Number(parts[0]) % 24) * 60 + Number(parts[1]);
+  const slots = subjects
+    .map((x) => {
+      const m = /(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/.exec(x.time ?? '');
+      return m ? { subject: x.subject, start: Number(m[1]) * 60 + Number(m[2]), end: Number(m[3]) * 60 + Number(m[4]), at: `${m[1]!.padStart(2, '0')}:${m[2]}` } : null;
+    })
+    .filter((x): x is { subject: string; start: number; end: number; at: string } => x !== null && !/^\s*istirahat\b/i.test(x.subject))
+    .sort((a, b) => a.start - b.start);
+  const running = slots.find((x) => cur >= x.start && cur < x.end);
+  if (running) return { now: true, subject: running.subject, at: running.at };
+  const next = slots.find((x) => x.start > cur);
+  return next ? { now: false, subject: next.subject, at: next.at } : null;
 }
 
 function greeting(tz: string): string {
@@ -229,6 +246,8 @@ export function PublicHomePage() {
   const uniform = todayContent.map((c) => c.uniform.trim()).find(Boolean);
   const homework = todayContent.flatMap((c) => c.homework);
   const piket = todayContent.flatMap((c) => c.piket);
+  const lessons = todayContent.flatMap((c) => c.subjects).filter((x) => !/^\s*istirahat\b/i.test(x.subject));
+  const lesson = d ? lessonNow(todayContent.flatMap((c) => c.subjects), d.timezone) : null;
 
   const lists: Record<Tab, PublicReminder[]> = { today: todays, later, past };
   const empty: Record<Tab, [string, string]> = {
@@ -255,24 +274,31 @@ export function PublicHomePage() {
         {d && (
           <>
             <section className="hero">
+              <div className="hero-deco" aria-hidden="true" />
               <div className="label-l">{greeting(d.timezone)} 👋</div>
-              <div className="display-s">{longDate(today)}</div>
-              <div className="chips">
-                <span className="chip static">{todays.length} info hari ini</span>
-                <span className="chip static">{homework.length} PR</span>
-                {later.length > 0 && <span className="chip static">{later.length} mendatang</span>}
-              </div>
+              <div className="hero-day">{longDate(today).split(',')[0]}</div>
+              <div className="hero-date">{longDate(today).split(',').slice(1).join(',').trim()}</div>
+              {lesson && (
+                <div className="hero-now">
+                  <span className={`dot${lesson.now ? ' live' : ''}`} aria-hidden="true" />
+                  <span>{lesson.now ? 'Sedang berlangsung' : 'Berikutnya'}: <strong>{lesson.subject}</strong> · {lesson.at}</span>
+                </div>
+              )}
+              {todays.length === 0 && <div className="hero-now"><span>Belum ada info untuk hari ini</span></div>}
             </section>
 
             {pinned.map((r) => (
               <ReminderCard key={`pin-${r.id}`} r={r} emergency />
             ))}
 
-            <div className="tiles">
-              <Tile icon="👕" label="Seragam" value={uniform ?? '—'} />
-              <Tile icon="📝" label="PR / Tugas" value={homework.length ? `${homework.length} tugas` : '—'} hint={homework[0] ? `${homework[0].subject}: ${homework[0].task}` : undefined} />
-              <Tile icon="🧹" label="Piket" value={piket.length ? `${piket.length} orang` : '—'} hint={piket.slice(0, 2).map((p) => p.name).join(', ') || undefined} />
-            </div>
+            {todays.length > 0 && (
+              <div className="stiles">
+                <StatTile icon="👕" value={uniform ? 'Ada' : '–'} label="Seragam" tone="p" />
+                <StatTile icon="📚" value={String(lessons.length)} label="Pelajaran" tone="s" />
+                <StatTile icon="📝" value={String(homework.length)} label="PR / Tugas" tone="t" />
+                <StatTile icon="🧹" value={String(piket.length)} label="Piket" tone="n" />
+              </div>
+            )}
 
             <NotificationsCard />
 
@@ -286,7 +312,7 @@ export function PublicHomePage() {
             </div>
 
             <div className="stack" role="tabpanel" key={tab}>
-              {lists[tab].length === 0 ? <EmptyState icon="schedule" title={empty[tab][0]} hint={empty[tab][1]} /> : lists[tab].map((r) => <ReminderCard key={r.id} r={r} />)}
+              {lists[tab].length === 0 ? <div className="pempty"><div className="pempty-art" aria-hidden="true">{tab === 'today' ? '🎒' : tab === 'later' ? '🗓️' : '📖'}</div><div className="title-m">{empty[tab][0]}</div><div className="body-m muted">{empty[tab][1]}</div></div> : lists[tab].map((r) => <ReminderCard key={r.id} r={r} />)}
             </div>
           </>
         )}
