@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Fab } from '../ui/controls';
+import { BrandMark } from '../ui/Brand';
 import { Icon, type IconName } from '../ui/Icon';
 import { MenuButton, MenuDivider, MenuItem } from '../ui/Menu';
 import { useTheme, type ThemeMode } from '../theme/ThemeProvider';
@@ -64,7 +65,7 @@ function TopAppBar() {
   return (
     <header className="topbar" data-scrolled={scrolled}>
       <div className="topbar-brand">
-        <img src="/logo.svg" alt="" width={28} height={28} />
+        <BrandMark size={32} />
         <span className="title-l">ClassReminder</span>
       </div>
       <span className="grow" />
@@ -109,7 +110,7 @@ export function Shell() {
   return (
     <div className="shell">
       <nav className="nav-rail" aria-label={t('Main')}>
-        <div className="nav-rail-title title-m">ClassReminder</div>
+        <div className="nav-rail-title"><BrandMark size={36} /><span className="title-m">ClassReminder</span></div>
         {canCreate && <Fab to="/reminders/new" icon="add" label={t('New')} />}
         {items.map((i) => (
           <NavItem key={i.to} item={i} />

@@ -5,15 +5,16 @@ import { useAuth } from '../auth/AuthProvider';
 import { fmtDateTime, longDate } from '../lib/format';
 import { useAsync } from '../lib/useAsync';
 import { Badge, Card, LinkButton } from '../ui/controls';
+import { Icon, type IconName } from '../ui/Icon';
 import { AsyncView, EmptyState } from '../ui/states';
 import { t } from '../i18n';
 
-const STAT_ORDER: { key: ReminderStatus; label: string }[] = [
-  { key: 'due', label: t('To send') },
-  { key: 'pending', label: t('Scheduled') },
-  { key: 'sent', label: t('Sent') },
-  { key: 'failed', label: t('Failed') },
-  { key: 'draft', label: t('Drafts') },
+const STAT_ORDER: { key: ReminderStatus; label: string; icon: IconName; to: string }[] = [
+  { key: 'due', label: t('To send'), icon: 'send', to: '/due' },
+  { key: 'pending', label: t('Scheduled'), icon: 'schedule', to: '/scheduled' },
+  { key: 'sent', label: t('Sent'), icon: 'check', to: '/history' },
+  { key: 'failed', label: t('Failed'), icon: 'warning', to: '/history' },
+  { key: 'draft', label: t('Drafts'), icon: 'edit', to: '/scheduled' },
 ];
 
 function Row({ r }: { r: Reminder }) {
@@ -69,12 +70,13 @@ export function DashboardPage() {
                 {can('templates.read') && <LinkButton to="/templates" variant="outlined" icon="template">{t('Templates')}</LinkButton>}
               </div>
             </Card>
-            <div className="grid cols-auto">
+            <div className="stat-grid">
               {STAT_ORDER.map((s) => (
-                <Card key={s.key} variant={s.key === 'failed' && d.counts.failed > 0 ? 'tonal-primary' : 'filled'}>
-                  <span className="label-l muted">{s.label}</span>
+                <Link key={s.key} to={s.to} className={`stat-card sc-${s.key}`} aria-label={`${s.label}: ${d.counts[s.key] ?? 0}`}>
+                  <span className="sc-icon"><Icon name={s.icon} size={20} /></span>
                   <span className="stat">{d.counts[s.key] ?? 0}</span>
-                </Card>
+                  <span className="label-l">{s.label}</span>
+                </Link>
               ))}
             </div>
             <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>

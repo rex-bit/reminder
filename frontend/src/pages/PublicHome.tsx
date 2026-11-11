@@ -9,6 +9,7 @@ import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { useAsync } from '../lib/useAsync';
 import { SEED_PRESETS } from '../theme/palette';
 import { useTheme, type ThemeMode } from '../theme/ThemeProvider';
+import { BrandMark } from '../ui/Brand';
 import { IconButton, LinkButton, Segmented, Switch } from '../ui/controls';
 import { BottomSheet, useOverlay } from '../ui/overlay';
 import { EmptyState, ErrorState, LoadingList } from '../ui/states';
@@ -259,7 +260,7 @@ export function PublicHomePage() {
   return (
     <div className="pubhome">
       <header className="appbar">
-        <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" width={36} height={36} style={{ borderRadius: 10 }} />
+        <BrandMark size={36} />
         <h1 className="title-l grow">Info Kelas</h1>
         <IconButton icon="refresh" label="Muat ulang" onClick={reload} />
         <IconButton icon="settings" label="Tampilan & warna" onClick={() => setLook(true)} />

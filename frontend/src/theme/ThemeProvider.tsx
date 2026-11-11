@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { applyBrandIcons } from './brand';
 import { buildScheme, SEED_PRESETS } from './palette';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -58,6 +59,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.dataset.theme = resolved;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', scheme.surface ?? '#ffffff');
   }, [seed, resolved]);
+
+  useEffect(() => applyBrandIcons(seed), [seed]);
 
   const setMode = useCallback((m: ThemeMode) => {
     setModeState(m);

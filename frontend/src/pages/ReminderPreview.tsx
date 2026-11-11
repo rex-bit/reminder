@@ -149,7 +149,7 @@ export function ReminderPreviewPage() {
               <dt className="muted">{t('Send time')}</dt><dd style={{ margin: 0 }}>{fmtDateTime(r.scheduled_at, r.timezone)}</dd>
               <dt className="muted">{t('Timezone')}</dt><dd style={{ margin: 0 }}>{r.timezone}</dd>
               <dt className="muted">{t('Delivery method')}</dt><dd style={{ margin: 0 }}>{r.delivery_method === 'whatsapp' ? t('WhatsApp automatic send') : r.delivery_method === 'push' ? t('Website push notification') : t('WhatsApp + website push')}</dd>
-              <dt className="muted">{t('Repeats')}</dt><dd style={{ margin: 0 }}>{r.recurrence === 'none' ? t('No') : r.recurrence_until ? t('{recurrence} until {date}', { recurrence: r.recurrence, date: r.recurrence_until }) : r.recurrence}</dd>
+              <dt className="muted">{t('Repeats')}</dt><dd style={{ margin: 0 }}>{r.recurrence === 'none' ? t('No') : r.recurrence_until ? t('{recurrence} until {date}', { recurrence: r.recurrence, date: r.recurrence_until }) : t(r.recurrence)}</dd>
               <dt className="muted">{t('Sent at')}</dt><dd style={{ margin: 0 }}>{fmtDateTime(r.sent_at, r.timezone)}</dd>
               <dt className="muted">{t('Recipients')}</dt><dd style={{ margin: 0 }}>{names.length ? names.map((n) => n.name).join(', ') : r.recipient_ids.length ? t('{count} selected', { count: r.recipient_ids.length }) : t('None')}</dd>
             </dl>
