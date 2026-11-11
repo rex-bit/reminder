@@ -9,6 +9,9 @@ export const idManage: Record<string, string> = {
   'subjects': 'pelajaran',
   'assignments': 'tugas',
   'duty': 'piket',
+  'Adjust photo': 'Atur foto',
+  'Zoom': 'Zoom',
+  'Drag the photo to reposition it.': 'Geser foto untuk mengatur posisi.',
   // Activity logs
   'Filter by action prefix (e.g. auth., reminder.)': 'Filter berdasarkan awalan aksi (mis. auth., reminder.)',
   'No activity found': 'Aktivitas tidak ditemukan',

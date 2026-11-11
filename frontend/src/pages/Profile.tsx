@@ -6,7 +6,8 @@ import { fmtDateTime } from '../lib/format';
 import { Badge, Button, Card, TextField } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 import { Avatar } from '../ui/Avatar';
-import { imageToAvatar } from '../lib/avatar';
+import { readImage } from '../lib/avatar';
+import { PhotoCrop } from '../ui/PhotoCrop';
 import { useOverlay } from '../ui/overlay';
 import { t } from '../i18n';
 
@@ -25,12 +26,14 @@ export function ProfilePage() {
   const [pwError, setPwError] = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const [cropImg, setCropImg] = useState<HTMLImageElement | null>(null);
   if (!admin) return null;
   async function pickPhoto(file?: File) {
-    if (!file || !admin) return;
-    let data: string;
-    try { data = await imageToAvatar(file); } catch { notify(t('Could not use this image'), { kind: 'error' }); return; }
-    try { await adminsApi.setAvatar(data); await reloadMe(); notify(t('Photo updated')); } catch (err) { notify(errorMessage(err), { kind: 'error' }); }
+    if (!file) return;
+    try { setCropImg(await readImage(file)); } catch { notify(t('Could not use this image'), { kind: 'error' }); }
+  }
+  async function savePhoto(data: string) {
+    try { await adminsApi.setAvatar(data); await reloadMe(); setCropImg(null); notify(t('Photo updated')); } catch (err) { notify(errorMessage(err), { kind: 'error' }); }
   }
   const pwErrs = { next: next && next.length < 12 ? t('At least 12 characters') : undefined, confirm: confirm && confirm !== next ? t('Passwords do not match') : undefined };
 
@@ -87,6 +90,7 @@ export function ProfilePage() {
         <Button variant="outlined" icon="logout" onClick={() => logout()}>{t('Sign out')}</Button>
       </div>
 
+      {cropImg && <PhotoCrop img={cropImg} onCancel={() => setCropImg(null)} onSave={savePhoto} />}
       {admin.must_change_password && <div className="banner" role="alert">{t('You must set a new password before you can use the app.')}</div>}
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
