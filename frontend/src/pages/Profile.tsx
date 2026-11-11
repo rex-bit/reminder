@@ -28,7 +28,9 @@ export function ProfilePage() {
   if (!admin) return null;
   async function pickPhoto(file?: File) {
     if (!file || !admin) return;
-    try { await adminsApi.setAvatar(await imageToAvatar(file)); await reloadMe(); notify(t('Photo updated')); } catch { notify(t('Could not use this image'), { kind: 'error' }); }
+    let data: string;
+    try { data = await imageToAvatar(file); } catch { notify(t('Could not use this image'), { kind: 'error' }); return; }
+    try { await adminsApi.setAvatar(data); await reloadMe(); notify(t('Photo updated')); } catch (err) { notify(errorMessage(err), { kind: 'error' }); }
   }
   const pwErrs = { next: next && next.length < 12 ? t('At least 12 characters') : undefined, confirm: confirm && confirm !== next ? t('Passwords do not match') : undefined };
 
