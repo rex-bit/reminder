@@ -96,6 +96,15 @@ adminsRouter.post('/', requirePermission('admins.create'), validate({ body: crea
   res.status(201).json({ admin: await getMe(id) });
 }));
 
+const avatarBody = z.object({ avatar: z.string().max(60000).regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/).nullable() });
+
+adminsRouter.put('/me/avatar', validate({ body: avatarBody }), asyncHandler(async (req, res) => {
+  const b = req.body as z.infer<typeof avatarBody>;
+  await query(`UPDATE admins SET avatar_url = $2 WHERE id = $1`, [req.admin!.id, b.avatar]);
+  await logActivity({ action: b.avatar ? 'admin.set_avatar' : 'admin.remove_avatar', entityType: 'admin', entityId: req.admin!.id }, req);
+  res.json({ admin: await getMe(req.admin!.id) });
+}));
+
 // Registered before "/:id" so "me" is not parsed as an id.
 adminsRouter.patch('/me', validate({ body: meBody }), asyncHandler(async (req, res) => {
   const b = req.body as z.infer<typeof meBody>;

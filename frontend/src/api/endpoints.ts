@@ -54,6 +54,7 @@ export const adminsApi = {
     api<{ admin: Admin }>(`/admins/${id}`, { method: 'PATCH', body: b }),
   resetPassword: (id: string, password: string) => api<void>(`/admins/${id}/reset-password`, { method: 'POST', body: { password } }),
   remove: (id: string) => api<void>(`/admins/${id}`, { method: 'DELETE' }),
+  setAvatar: (avatar: string | null) => api<{ admin: Admin }>('/admins/me/avatar', { method: 'PUT', body: { avatar } }),
   updateMe: (b: { display_name?: string; email?: string }) => api<{ admin: Admin }>('/admins/me', { method: 'PATCH', body: b }),
 };
 

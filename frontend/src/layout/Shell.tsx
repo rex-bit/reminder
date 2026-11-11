@@ -79,7 +79,7 @@ function TopAppBar() {
           ))
         }
       </MenuButton>
-      <MenuButton label={t('Account')} trigger={<Avatar id={admin?.id} name={admin?.display_name ?? initial} size="sm" />}>
+      <MenuButton label={t('Account')} trigger={<Avatar src={admin?.avatar_url} name={admin?.display_name ?? initial} size="sm" />}>
         {(close) => (
           <>
             <div className="menu-head">

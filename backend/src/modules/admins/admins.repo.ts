@@ -7,6 +7,7 @@ export interface AdminRow {
   username: string;
   email: string;
   display_name: string;
+  avatar_url: string | null;
   status: 'active' | 'disabled';
   role_key: string;
   must_change_password: boolean;
@@ -20,7 +21,7 @@ export interface AdminContext extends AdminRow {
   permissions: Set<string>;
 }
 
-export const PUBLIC_COLUMNS = `a.id, a.admin_code, a.username, a.email, a.display_name, a.status,
+export const PUBLIC_COLUMNS = `a.id, a.admin_code, a.username, a.email, a.display_name, a.avatar_url, a.status,
   r.key AS role_key, a.must_change_password, a.last_login_at, a.created_at, a.updated_at`;
 
 export async function findAdminById(id: string, db: Db = pool): Promise<(AdminRow & { token_version: number }) | null> {

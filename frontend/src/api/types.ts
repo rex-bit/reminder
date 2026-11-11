@@ -13,6 +13,7 @@ export interface Admin {
   username: string;
   email: string;
   display_name: string;
+  avatar_url?: string | null;
   status: 'active' | 'disabled';
   role_key: 'owner' | 'admin';
   must_change_password: boolean;

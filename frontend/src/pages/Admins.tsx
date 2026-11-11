@@ -6,6 +6,7 @@ import type { Admin, PermissionDef } from '../api/types';
 import { useAuth } from '../auth/AuthProvider';
 import { fmtDateTime } from '../lib/format';
 import { useAsync } from '../lib/useAsync';
+import { Avatar } from '../ui/Avatar';
 import { Badge, Button, Checkbox, IconButton, Switch, TextField } from '../ui/controls';
 import { Dialog, useOverlay } from '../ui/overlay';
 import { AsyncView, EmptyState, ErrorState } from '../ui/states';
@@ -147,7 +148,7 @@ export function AdminsPage() {
               <tbody>
                 {items.map((a) => (
                   <tr key={a.id}>
-                    <td><div className="row" style={{ flexWrap: 'nowrap' }}><span className="avatar">{a.display_name.charAt(0).toUpperCase()}</span><div><div className="title-s">{a.display_name}{a.id === me?.id && ` ${t('(you)')}`}</div><div className="body-s muted">{a.email}</div></div></div></td>
+                    <td><div className="row" style={{ flexWrap: 'nowrap' }}><Avatar src={a.avatar_url} name={a.display_name} /><div><div className="title-s">{a.display_name}{a.id === me?.id && ` ${t('(you)')}`}</div><div className="body-s muted">{a.email}</div></div></div></td>
                     <td className="mono" data-label={t('ID')}>{a.admin_code}</td>
                     <td data-label={t('Role')}><Badge status={a.role_key === 'owner' ? 'active' : undefined}>{a.role_key === 'owner' ? t('Owner') : t('Admin')}</Badge></td>
                     <td data-label={t('Status')}><Badge status={a.status} /></td>

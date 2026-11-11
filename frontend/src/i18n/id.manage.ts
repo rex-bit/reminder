@@ -5,7 +5,7 @@ export const idManage: Record<string, string> = {
   'Photo updated': 'Foto diperbarui',
   'Photo removed': 'Foto dihapus',
   'Could not use this image': 'Gambar tidak bisa dipakai',
-  'Photo is stored on this device only.': 'Foto hanya disimpan di perangkat ini.',
+  'Visible to all admins.': 'Terlihat oleh semua admin.',
   'subjects': 'pelajaran',
   'assignments': 'tugas',
   'duty': 'piket',
