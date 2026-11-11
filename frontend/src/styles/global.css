@@ -532,3 +532,12 @@ strong, b { font-weight: 600; }
   .nav-rail .fab { width: 56px; padding: 0; justify-content: center; }
   .nav-rail .fab span { display: none; }
 }
+
+.sec-title { display: flex; align-items: center; gap: 10px; margin: 0; }
+.sec-ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.sec-ico .icon, .sec-ico svg { width: 20px; height: 20px; font-size: 20px; }
+
+@media (max-width: 599px) {
+  .seg { height: auto; min-height: 40px; }
+  .seg button { height: auto; min-height: 40px; padding: 8px 6px; white-space: normal; line-height: 1.2; text-align: center; font-size: 13px; }
+}

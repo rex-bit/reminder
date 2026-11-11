@@ -10,6 +10,11 @@ import { Button, Card, Checkbox, DateField, SelectField, Segmented, Switch, Text
 import { useOverlay } from '../ui/overlay';
 import { ErrorState, LoadingList } from '../ui/states';
 import { ContentEditor } from '../ui/ContentEditor';
+import { Icon } from '../ui/Icon';
+
+const Sec = ({ icon, children }: { icon: Parameters<typeof Icon>[0]['name']; children: string }) => (
+  <h3 className="title-m sec-title"><span className="sec-ico"><Icon name={icon} /></span>{children}</h3>
+);
 import { ScheduleDialog } from './ScheduleDialog';
 import { t } from '../i18n';
 
@@ -161,7 +166,7 @@ export function ReminderFormPage() {
           <ContentEditor content={content} onChange={setContent} />
 
           <Card variant="outlined">
-            <h3 className="title-m">{t('Delivery method')}</h3>
+            <Sec icon="send">{t('Delivery method')}</Sec>
             <Segmented<DeliveryMethod> label={t('Delivery method')} value={method} onChange={setMethod} options={[{ value: 'whatsapp', label: t('WhatsApp automatic send') }, { value: 'push', label: t('Website push notification') }, { value: 'both', label: t('Both') }]} />
             {method !== 'push' && deliveryCfg.data && !deliveryCfg.data.whatsapp.configured && (
               <div className="banner" role="status">{t('WhatsApp Cloud API is not configured on the server (missing: {vars}). Messages will fail until it is set up.', { vars: deliveryCfg.data.whatsapp.missing.join(', ') })}</div>
@@ -176,7 +181,7 @@ export function ReminderFormPage() {
           </Card>
 
           {method !== 'push' && <Card variant="outlined">
-            <h3 className="title-m">{t('Recipients')}</h3>
+            <Sec icon="people">{t('Recipients')}</Sec>
             {recipients.loading ? <LoadingList rows={2} /> : recipients.error ? <ErrorState message={recipients.error} onRetry={recipients.reload} /> : activeRecipients.length === 0 ? (
               <p className="body-m muted">{t('No active recipients yet. Add some on the Recipients page.')}</p>
             ) : (
@@ -191,7 +196,7 @@ export function ReminderFormPage() {
           </Card>}
 
           <Card variant="outlined">
-            <h3 className="title-m">{t('Recurrence')}</h3>
+            <Sec icon="schedule">{t('Recurrence')}</Sec>
             <div className="editor-grid">
               <SelectField label={t('Repeat')} value={recurrence} onChange={(e) => setRecurrence(e.target.value as Recurrence)}>
                 <option value="none">{t('Does not repeat')}</option>
@@ -207,7 +212,7 @@ export function ReminderFormPage() {
         <div className="stack sticky">
           <Card variant="elevated">
             <div className="row">
-              <h3 className="title-m grow">{t('Message preview')}</h3>
+              <Sec icon="visibility">{t('Message preview')}</Sec><span className="grow" />
               <Switch checked={custom !== null} onChange={(v) => setCustom(v ? generated : null)} label={t('Customize')} />
             </div>
             {custom !== null ? (
