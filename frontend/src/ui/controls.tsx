@@ -1,4 +1,4 @@
-import { Children, isValidElement, type ButtonHTMLAttributes, type ChangeEvent, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { Children, isValidElement, type ElementType, type ButtonHTMLAttributes, type ChangeEvent, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { useHref, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { useMd } from './useMd';
@@ -32,7 +32,7 @@ function ButtonBody({ icon, loading, children }: { icon?: IconName; loading?: bo
 }
 
 export function Button({ variant = 'filled', icon, loading, danger, className = '', children, disabled, type = 'button', ...rest }: BtnProps) {
-  const Tag = BUTTON_TAG[variant] as 'md-filled-button';
+  const Tag = BUTTON_TAG[variant] as unknown as ElementType;
   const ref = useMd({ disabled: !!(disabled || loading), type });
   const isDanger = danger || variant === 'danger';
   return (
@@ -43,7 +43,7 @@ export function Button({ variant = 'filled', icon, loading, danger, className = 
 }
 
 export function LinkButton({ variant = 'filled', icon, children, className = '', to }: { to: string; variant?: Variant; icon?: IconName; children?: ReactNode; className?: string }) {
-  const Tag = BUTTON_TAG[variant] as 'md-filled-button';
+  const Tag = BUTTON_TAG[variant] as unknown as ElementType;
   const href = useHref(to);
   const nav = useNavigate();
   return (
