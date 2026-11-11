@@ -570,3 +570,29 @@ strong, b { font-weight: 600; }
 .crop-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(255,255,255,.7); pointer-events: none; }
 .crop-zoom { display: flex; align-items: center; gap: 12px; padding: 4px 8px; }
 .crop-zoom input { flex: 1; accent-color: var(--md-primary); }
+
+/* ---- Floating "liquid glass" bottom bar (phones) ---- */
+.nav-bar {
+  left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); height: 66px; padding: 6px;
+  border-radius: 33px; gap: 2px; justify-content: space-between;
+  background: color-mix(in srgb, var(--md-surface-container-high) 55%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.9); backdrop-filter: blur(22px) saturate(1.9);
+  border: 1px solid color-mix(in srgb, var(--md-on-surface) 14%, transparent);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(255,255,255,.08);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav-bar { background: var(--md-surface-container-high); }
+}
+.nav-bar .nav-item { flex: 1; min-width: 0; height: 100%; padding: 0; gap: 2px; justify-content: center; border-radius: 27px; position: relative; }
+.nav-bar .nav-pill { position: absolute; inset: 0; width: auto; height: auto; border-radius: 27px; background: transparent; z-index: 0; }
+.nav-bar .nav-item > * { position: relative; z-index: 1; }
+.nav-bar .nav-item .nav-pill { position: absolute; }
+.nav-bar .nav-item .nav-pill svg { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); }
+.nav-bar .nav-item .label-m { position: absolute; bottom: 6px; left: 0; right: 0; font-size: 10.5px; line-height: 12px; margin: 0; }
+.nav-bar .nav-item[aria-current='page'] .nav-pill {
+  background: color-mix(in srgb, var(--md-primary) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-primary) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.nav-bar .nav-item[aria-current='page'] { color: var(--md-primary); }
+.mobile-fab { bottom: calc(var(--bar-h) + 20px + env(safe-area-inset-bottom)); }
+.nav-bar .nav-item .label-m { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; letter-spacing: 0; font-size: 10px; }
