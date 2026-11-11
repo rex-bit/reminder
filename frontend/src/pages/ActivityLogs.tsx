@@ -21,16 +21,16 @@ export function ActivityLogsPage() {
         {(d) => (
           <>
             <div className="table-wrap">
-              <table>
+              <table className="rt">
                 <thead><tr><th>{t('When')}</th><th>{t('Admin')}</th><th>{t('Action')}</th><th>{t('Target')}</th><th>{t('Details')}</th></tr></thead>
                 <tbody>
                   {d.items.map((l) => (
                     <tr key={l.id}>
-                      <td>{fmtDateTime(l.created_at)}</td>
-                      <td>{l.admin_name ? <>{l.admin_name} <span className="body-s muted mono">{l.admin_code}</span></> : <span className="muted">{t('System')}</span>}</td>
-                      <td className="mono">{l.action}</td>
-                      <td className="body-s">{l.entity_type ? `${l.entity_type}${l.entity_id ? ` ${l.entity_id.slice(0, 8)}` : ''}` : '—'}</td>
-                      <td className="mono" style={{ maxWidth: 320, wordBreak: 'break-all' }}>{l.metadata && Object.keys(l.metadata).length ? JSON.stringify(l.metadata) : '—'}</td>
+                      <td data-label={t('When')}>{fmtDateTime(l.created_at)}</td>
+                      <td data-label={t('Admin')}>{l.admin_name ? <>{l.admin_name} <span className="body-s muted mono">{l.admin_code}</span></> : <span className="muted">{t('System')}</span>}</td>
+                      <td className="mono" data-label={t('Action')}>{l.action}</td>
+                      <td className="body-s" data-label={t('Target')}>{l.entity_type ? `${l.entity_type}${l.entity_id ? ` ${l.entity_id.slice(0, 8)}` : ''}` : '—'}</td>
+                      <td className="mono" data-label={t('Details')} style={{ maxWidth: 320, wordBreak: 'break-all' }}>{l.metadata && Object.keys(l.metadata).length ? JSON.stringify(l.metadata) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

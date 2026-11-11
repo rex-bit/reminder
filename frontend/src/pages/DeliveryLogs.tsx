@@ -26,17 +26,17 @@ export function DeliveryLogsPage() {
         {(d) => (
           <>
             <div className="table-wrap">
-              <table>
+              <table className="rt">
                 <thead><tr><th>{t('Reminder')}</th><th>{t('Recipient')}</th><th>{t('Status')}</th><th>{t('Attempt')}</th><th>{t('Time')}</th><th>{t('Error')}</th></tr></thead>
                 <tbody>
                   {d.items.map((l) => (
                     <tr key={l.id}>
                       <td><a href={`#/reminders/${l.reminder_id}`}>{l.reminder_title ?? l.reminder_id.slice(0, 8)}</a></td>
-                      <td>{l.recipient_name ?? '—'}</td>
-                      <td><Badge status={l.status} /></td>
-                      <td>{l.attempt}</td>
-                      <td>{fmtDateTime(l.read_at ?? l.delivered_at ?? l.sent_at ?? l.created_at)}</td>
-                      <td className="body-s" style={{ color: l.error_message ? 'var(--md-error)' : undefined }}>{l.error_message ? `${l.error_code ?? ''} ${l.error_message}` : '—'}</td>
+                      <td data-label={t('Recipient')}>{l.recipient_name ?? '—'}</td>
+                      <td data-label={t('Status')}><Badge status={l.status} /></td>
+                      <td data-label={t('Attempt')}>{l.attempt}</td>
+                      <td data-label={t('Time')}>{fmtDateTime(l.read_at ?? l.delivered_at ?? l.sent_at ?? l.created_at)}</td>
+                      <td className="body-s" data-label={t('Error')} style={{ color: l.error_message ? 'var(--md-error)' : undefined }}>{l.error_message ? `${l.error_code ?? ''} ${l.error_message}` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -104,15 +104,15 @@ export function RecipientsPage() {
       <AsyncView state={state} isEmpty={(d) => d.length === 0} empty={<EmptyState icon="send" title={t('No recipients')} hint={t('Add the numbers or groups that should receive reminders.')} action={manage ? <Button onClick={() => setEditing('new')}>{t('Add recipient')}</Button> : undefined} />}>
         {(items) => (
           <div className="table-wrap">
-            <table>
+            <table className="rt">
               <thead><tr><th>{t('Name')}</th><th>{t('Target')}</th><th>{t('Delivery')}</th><th>{t('Status')}</th><th aria-label={t('Actions')} /></tr></thead>
               <tbody>
                 {items.map((r) => (
                   <tr key={r.id}>
                     <td className="title-s">{r.name}</td>
-                    <td>{r.type === 'group' ? `${t('Group')}${r.wa_group_id ? ` · ${r.wa_group_id}` : ''}` : r.phone_e164 ?? '—'}</td>
-                    <td>{r.channel === 'manual_share' ? <span className="badge manual">{t('Manual share')}</span> : <Badge>WhatsApp API</Badge>}</td>
-                    <td><Badge status={r.is_active ? 'active' : 'disabled'}>{r.is_active ? t('Active') : t('Inactive')}</Badge></td>
+                    <td data-label={t('Target')}>{r.type === 'group' ? `${t('Group')}${r.wa_group_id ? ` · ${r.wa_group_id}` : ''}` : r.phone_e164 ?? '—'}</td>
+                    <td data-label={t('Delivery')}>{r.channel === 'manual_share' ? <span className="badge manual">{t('Manual share')}</span> : <Badge>WhatsApp API</Badge>}</td>
+                    <td data-label={t('Status')}><Badge status={r.is_active ? 'active' : 'disabled'}>{r.is_active ? t('Active') : t('Inactive')}</Badge></td>
                     <td>{manage && <div className="row" style={{ gap: 0, flexWrap: 'nowrap', justifyContent: 'flex-end' }}><IconButton icon="edit" label={t('Edit')} onClick={() => setEditing(r)} /><IconButton icon="delete" label={t('Delete')} onClick={() => remove(r)} /></div>}</td>
                   </tr>
                 ))}

@@ -142,16 +142,16 @@ export function AdminsPage() {
       <AsyncView state={state} isEmpty={(d) => d.length === 0} empty={<EmptyState icon="people" title={t('No admins')} />}>
         {(items) => (
           <div className="table-wrap">
-            <table>
+            <table className="rt">
               <thead><tr><th>{t('Admin')}</th><th>{t('ID')}</th><th>{t('Role')}</th><th>{t('Status')}</th><th>{t('Last sign-in')}</th><th aria-label={t('Actions')} /></tr></thead>
               <tbody>
                 {items.map((a) => (
                   <tr key={a.id}>
                     <td><div className="row" style={{ flexWrap: 'nowrap' }}><span className="avatar">{a.display_name.charAt(0).toUpperCase()}</span><div><div className="title-s">{a.display_name}{a.id === me?.id && ` ${t('(you)')}`}</div><div className="body-s muted">{a.email}</div></div></div></td>
-                    <td className="mono">{a.admin_code}</td>
-                    <td><Badge status={a.role_key === 'owner' ? 'active' : undefined}>{a.role_key === 'owner' ? t('Owner') : t('Admin')}</Badge></td>
-                    <td><Badge status={a.status} /></td>
-                    <td>{fmtDateTime(a.last_login_at)}</td>
+                    <td className="mono" data-label={t('ID')}>{a.admin_code}</td>
+                    <td data-label={t('Role')}><Badge status={a.role_key === 'owner' ? 'active' : undefined}>{a.role_key === 'owner' ? t('Owner') : t('Admin')}</Badge></td>
+                    <td data-label={t('Status')}><Badge status={a.status} /></td>
+                    <td data-label={t('Last sign-in')}>{fmtDateTime(a.last_login_at)}</td>
                     <td>
                       <div className="row" style={{ gap: 0, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
                         {can('admins.update') && <IconButton icon="edit" label={t('Edit')} onClick={() => setDlg(a)} />}

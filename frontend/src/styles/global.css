@@ -526,3 +526,9 @@ strong, b { font-weight: 600; }
 }
 .card > .seg { align-self: flex-start; max-width: 100%; }
 .seg { max-width: 100%; overflow-x: auto; }
+
+/* Rail FAB: icon-only until the rail is extended */
+@media (min-width: 600px) and (max-width: 1199px) {
+  .nav-rail .fab { width: 56px; padding: 0; justify-content: center; }
+  .nav-rail .fab span { display: none; }
+}
