@@ -596,3 +596,21 @@ strong, b { font-weight: 600; }
 .nav-bar .nav-item[aria-current='page'] { color: var(--md-primary); }
 .mobile-fab { bottom: calc(var(--bar-h) + 20px + env(safe-area-inset-bottom)); }
 .nav-bar .nav-item .label-m { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; letter-spacing: 0; font-size: 10px; }
+
+/* ---- @material/web integration ---- */
+md-filled-button, md-filled-tonal-button, md-outlined-button, md-text-button {
+  --md-filled-button-container-shape: 999px; --md-filled-tonal-button-container-shape: 999px;
+  --md-outlined-button-container-shape: 999px; --md-text-button-container-shape: 999px;
+  font-family: inherit; vertical-align: middle;
+}
+md-circular-progress.md-spin { --md-circular-progress-size: 18px; --md-circular-progress-active-indicator-width: 12; }
+.md-slot { display: contents; }
+.md-danger.md-danger-filled { --md-filled-button-container-color: var(--md-error); --md-filled-button-label-text-color: var(--md-on-error); --md-filled-button-hover-label-text-color: var(--md-on-error); --md-filled-button-focus-label-text-color: var(--md-on-error); --md-filled-button-pressed-label-text-color: var(--md-on-error); --md-filled-button-icon-color: var(--md-on-error); }
+.md-danger.md-danger-text { --md-text-button-label-text-color: var(--md-error); --md-text-button-hover-label-text-color: var(--md-error); --md-text-button-focus-label-text-color: var(--md-error); --md-text-button-pressed-label-text-color: var(--md-error); --md-text-button-icon-color: var(--md-error); }
+.md-danger.md-danger-outlined, .md-danger.md-danger-tonal { --md-outlined-button-label-text-color: var(--md-error); --md-outlined-button-icon-color: var(--md-error); --md-filled-tonal-button-label-text-color: var(--md-error); --md-filled-tonal-button-icon-color: var(--md-error); }
+md-outlined-text-field, md-outlined-select { width: 100%; font-family: inherit; --md-outlined-text-field-container-shape: 12px; --md-outlined-select-text-field-container-shape: 12px; }
+.md-field { display: block; margin: 0; }
+.md-switch-row, .md-check-row { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.md-check-row { gap: 8px; }
+md-switch, md-checkbox { flex: none; }
+md-icon-button { --md-icon-button-icon-color: var(--md-on-surface-variant); }

@@ -1,9 +1,19 @@
-import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
-import { Link, type LinkProps } from 'react-router-dom';
+import { Children, isValidElement, type ButtonHTMLAttributes, type ChangeEvent, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useHref, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { useMd } from './useMd';
+import './md';
 import { t } from '../i18n';
 
 type Variant = 'filled' | 'tonal' | 'outlined' | 'text' | 'danger';
+
+const BUTTON_TAG: Record<Variant, string> = {
+  filled: 'md-filled-button',
+  tonal: 'md-filled-tonal-button',
+  outlined: 'md-outlined-button',
+  text: 'md-text-button',
+  danger: 'md-filled-button',
+};
 
 interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -12,43 +22,71 @@ interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   danger?: boolean;
 }
 
-export function Button({ variant = 'filled', icon, loading, danger, className = '', children, disabled, ...rest }: BtnProps) {
+function ButtonBody({ icon, loading, children }: { icon?: IconName; loading?: boolean; children?: ReactNode }) {
   return (
-    <button
-      type="button"
-      {...rest}
-      disabled={disabled || loading}
-      className={`btn btn-${variant} ${danger ? 'danger' : ''} ${!children ? 'icon-only' : ''} ${className}`}
+    <>
+      {loading ? <md-circular-progress slot="icon" indeterminate="" aria-label={t('Loading')} class="md-spin" /> : icon ? <span slot="icon" className="md-slot"><Icon name={icon} size={18} /></span> : null}
+      {children}
+    </>
+  );
+}
+
+export function Button({ variant = 'filled', icon, loading, danger, className = '', children, disabled, type = 'button', ...rest }: BtnProps) {
+  const Tag = BUTTON_TAG[variant] as 'md-filled-button';
+  const ref = useMd({ disabled: !!(disabled || loading), type });
+  const isDanger = danger || variant === 'danger';
+  return (
+    <Tag ref={ref} {...(rest as object)} class={`md-btn ${isDanger ? `md-danger md-danger-${variant === 'danger' ? 'filled' : variant}` : ''} ${!children ? 'icon-only' : ''} ${className}`}>
+      <ButtonBody icon={icon} loading={loading}>{children}</ButtonBody>
+    </Tag>
+  );
+}
+
+export function LinkButton({ variant = 'filled', icon, children, className = '', to }: { to: string; variant?: Variant; icon?: IconName; children?: ReactNode; className?: string }) {
+  const Tag = BUTTON_TAG[variant] as 'md-filled-button';
+  const href = useHref(to);
+  const nav = useNavigate();
+  return (
+    <Tag
+      href={href}
+      class={`md-btn ${className}`}
+      onClick={(e: MouseEvent) => {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        nav(to);
+      }}
     >
-      {loading ? <span className="spinner" role="status" aria-label={t('Loading')} /> : icon ? <Icon name={icon} size={18} /> : null}
-      {children}
-    </button>
+      <ButtonBody icon={icon}>{children}</ButtonBody>
+    </Tag>
   );
 }
 
-export function LinkButton({ variant = 'filled', icon, children, className = '', ...rest }: LinkProps & { variant?: Variant; icon?: IconName }) {
+export function IconButton({ icon, label, className = '', disabled, ...rest }: { icon: IconName; label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const ref = useMd({ disabled: !!disabled });
   return (
-    <Link {...rest} className={`btn btn-${variant} ${className}`}>
-      {icon && <Icon name={icon} size={18} />}
-      {children}
-    </Link>
-  );
-}
-
-export function IconButton({ icon, label, ...rest }: { icon: IconName; label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button type="button" {...rest} className={`btn btn-text icon-only ${rest.className ?? ''}`} aria-label={label} title={label}>
+    <md-icon-button ref={ref} {...(rest as object)} class={className} aria-label={label} title={label}>
       <Icon name={icon} />
-    </button>
+    </md-icon-button>
   );
 }
 
 export function Fab({ to, icon, label }: { to: string; icon: IconName; label: string }) {
+  const href = useHref(to);
+  const nav = useNavigate();
   return (
-    <Link to={to} className="fab" aria-label={label}>
+    <a
+      href={href}
+      className="fab"
+      aria-label={label}
+      onClick={(e) => {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        nav(to);
+      }}
+    >
       <Icon name={icon} />
       <span>{label}</span>
-    </Link>
+    </a>
   );
 }
 
@@ -58,74 +96,78 @@ interface FieldBase {
   help?: string;
 }
 
-export const TextField = forwardRef<HTMLInputElement, FieldBase & InputHTMLAttributes<HTMLInputElement>>(function TextField(
-  { label, error, help, className = '', ...rest },
-  ref,
-) {
-  const id = useId();
-  return (
-    <div className={`field ${error ? 'invalid' : ''} ${className}`}>
-      <div className="field-box">
-        <input ref={ref} id={id} placeholder=" " aria-invalid={!!error} aria-describedby={`${id}-s`} {...rest} />
-        <label htmlFor={id}>{label}</label>
-      </div>
-      {(error || help) && (
-        <span className="support" id={`${id}-s`}>
-          {error ?? help}
-        </span>
-      )}
-    </div>
-  );
-});
+type FieldRest<E extends HTMLElement> = Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'ref'> & { onChange?(e: ChangeEvent<E>): void };
 
-export function TextArea({ label, error, help, className = '', ...rest }: FieldBase & TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const id = useId();
+function asChange<E extends HTMLElement>(el: EventTarget | null) {
+  return { target: el, currentTarget: el } as unknown as ChangeEvent<E>;
+}
+
+/** Text-like props that map onto md-outlined-text-field properties. */
+function fieldProps(rest: Record<string, unknown>) {
+  const out: Record<string, unknown> = {};
+  const map: Record<string, string> = { autoComplete: 'autocomplete', readOnly: 'readOnly', maxLength: 'maxLength', inputMode: 'inputMode' };
+  for (const k of ['value', 'type', 'disabled', 'readOnly', 'maxLength', 'min', 'max', 'step', 'required', 'placeholder', 'name', 'autoComplete', 'inputMode', 'pattern']) {
+    if (k in rest && rest[k] !== undefined) out[map[k] ?? k] = rest[k];
+  }
+  return out;
+}
+
+export function TextField({ label, error, help, className = '', onChange, ...rest }: FieldBase & FieldRest<HTMLInputElement> & { className?: string }) {
+  const ref = useMd(
+    { label, error: !!error, errorText: error ?? '', supportingText: help ?? '', ...fieldProps(rest as Record<string, unknown>) },
+    { input: (e) => onChange?.(asChange<HTMLInputElement>(e.target)) },
+  );
+  return <md-outlined-text-field ref={ref} class={`md-field ${className}`} />;
+}
+
+export function TextArea({ label, error, help, className = '', onChange, ...rest }: FieldBase & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> & { onChange?(e: ChangeEvent<HTMLTextAreaElement>): void }) {
+  const ref = useMd(
+    { label, error: !!error, errorText: error ?? '', supportingText: help ?? '', type: 'textarea', rows: rest.rows ?? 4, ...fieldProps(rest as Record<string, unknown>) },
+    { input: (e) => onChange?.(asChange<HTMLTextAreaElement>(e.target)) },
+  );
+  return <md-outlined-text-field ref={ref} class={`md-field ${className}`} />;
+}
+
+export function SelectField({ label, error, help, className = '', children, onChange, value, disabled, required }: FieldBase & Omit<SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> & { onChange?(e: ChangeEvent<HTMLSelectElement>): void }) {
+  const ref = useMd(
+    { label, error: !!error, errorText: error ?? '', supportingText: help ?? '', value: value === undefined ? undefined : String(value), disabled: !!disabled, required: !!required },
+    { change: (e) => onChange?.(asChange<HTMLSelectElement>(e.target)) },
+  );
+  const opts = Children.toArray(children).filter(isValidElement) as ReactElement<{ value?: string | number; disabled?: boolean; children?: ReactNode }>[];
   return (
-    <div className={`field ${error ? 'invalid' : ''} ${className}`}>
-      <div className="field-box">
-        <textarea id={id} placeholder=" " aria-invalid={!!error} {...rest} />
-        <label htmlFor={id}>{label}</label>
-      </div>
-      {(error || help) && <span className="support">{error ?? help}</span>}
-    </div>
+    <md-outlined-select ref={ref} class={`md-field ${className}`}>
+      {opts.map((o, i) => {
+        const text = Children.toArray(o.props.children).join('');
+        const v = o.props.value !== undefined ? String(o.props.value) : text;
+        return (
+          <md-select-option key={o.key ?? i} value={v} {...(o.props.disabled ? { disabled: '' } : {})}>
+            <div slot="headline">{text}</div>
+          </md-select-option>
+        );
+      })}
+    </md-outlined-select>
   );
 }
 
-export function SelectField({ label, error, help, className = '', children, ...rest }: FieldBase & SelectHTMLAttributes<HTMLSelectElement>) {
-  const id = useId();
-  return (
-    <div className={`field ${error ? 'invalid' : ''} ${className}`}>
-      <div className="field-box">
-        <select id={id} {...rest}>
-          {children}
-        </select>
-        <label htmlFor={id}>{label}</label>
-      </div>
-      {(error || help) && <span className="support">{error ?? help}</span>}
-    </div>
-  );
-}
-
-/** Date/time pickers use the browser's native Material-styled-by-OS pickers inside M3 text fields. */
-export const DateField = (p: FieldBase & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) => <TextField {...p} type="date" />;
-export const TimeField = (p: FieldBase & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) => <TextField {...p} type="time" />;
+/** Date/time pickers use the browser's native pickers inside Material text fields. */
+export const DateField = (p: FieldBase & Omit<FieldRest<HTMLInputElement>, 'type'> & { className?: string }) => <TextField {...p} type="date" />;
+export const TimeField = (p: FieldBase & Omit<FieldRest<HTMLInputElement>, 'type'> & { className?: string }) => <TextField {...p} type="time" />;
 
 export function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange(v: boolean): void; label: ReactNode; disabled?: boolean }) {
+  const ref = useMd({ selected: checked, disabled: !!disabled, icons: true }, { change: (e) => onChange((e.target as unknown as { selected: boolean }).selected) });
   return (
-    <label className="switch">
-      <input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
-      <span className="track">
-        <span className="thumb" />
-      </span>
+    <label className="md-switch-row">
+      <md-switch ref={ref} />
       <span>{label}</span>
     </label>
   );
 }
 
 export function Checkbox({ checked, onChange, label, disabled }: { checked: boolean; onChange(v: boolean): void; label: ReactNode; disabled?: boolean }) {
+  const ref = useMd({ checked, disabled: !!disabled }, { change: (e) => onChange((e.target as unknown as { checked: boolean }).checked) });
   return (
-    <label className="check">
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+    <label className="md-check-row">
+      <md-checkbox ref={ref} touch-target="wrapper" />
       <span>{label}</span>
     </label>
   );

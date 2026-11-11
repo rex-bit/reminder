@@ -52,7 +52,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const scheme = buildScheme(seed, resolved);
     const root = document.documentElement;
-    for (const [k, v] of Object.entries(scheme)) root.style.setProperty(`--md-${k}`, v);
+    for (const [k, v] of Object.entries(scheme)) {
+      root.style.setProperty(`--md-${k}`, v);
+      root.style.setProperty(`--md-sys-color-${k}`, v); // read by the @material/web components
+    }
     root.style.colorScheme = resolved;
     // The page behind/around the app (iOS overscroll, safe areas) must follow the theme, not the value chosen at first load.
     root.style.backgroundColor = scheme.background ?? scheme.surface ?? '';
