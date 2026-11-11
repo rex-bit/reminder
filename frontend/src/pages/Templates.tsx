@@ -6,6 +6,7 @@ import { EMPTY_CONTENT, type ReminderContent, type Template } from '../api/types
 import { useAuth } from '../auth/AuthProvider';
 import { useAsync } from '../lib/useAsync';
 import { ContentEditor } from '../ui/ContentEditor';
+import { Icon } from '../ui/Icon';
 import { Button, Card, IconButton, TextArea, TextField } from '../ui/controls';
 import { Dialog, useOverlay } from '../ui/overlay';
 import { AsyncView, EmptyState } from '../ui/states';
@@ -74,10 +75,17 @@ export function TemplatesPage() {
         {(items) => (
           <div className="grid cols-auto">
             {items.map((tpl) => (
-              <Card key={tpl.id} variant="outlined">
-                <h2 className="title-m">{tpl.name}</h2>
+              <Card key={tpl.id} variant="outlined" className="tpl-card">
+                <div className="tpl-head">
+                  <span className="tpl-ico"><Icon name="template" /></span>
+                  <h2 className="title-m grow">{tpl.name}</h2>
+                </div>
                 <p className="body-m muted">{tpl.description || t('No description')}</p>
-                <p className="body-s muted">{t('{subjects} subjects · {homework} assignments · {piket} duty', { subjects: tpl.content.subjects.length, homework: tpl.content.homework.length, piket: tpl.content.piket.length })}</p>
+                <div className="tpl-stats">
+                  <span className="tpl-stat">{tpl.content.subjects.length} {t('subjects')}</span>
+                  <span className="tpl-stat">{tpl.content.homework.length} {t('assignments')}</span>
+                  <span className="tpl-stat">{tpl.content.piket.length} {t('duty')}</span>
+                </div>
                 {manage && (
                   <div className="row" style={{ gap: 0 }}>
                     <IconButton icon="edit" label={t('Edit')} onClick={() => setEditing(tpl)} />

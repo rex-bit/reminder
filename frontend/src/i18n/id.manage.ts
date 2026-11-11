@@ -1,5 +1,14 @@
 /** Indonesian translations (key = exact English text passed to t()). Admins, recipients, templates, logs. */
 export const idManage: Record<string, string> = {
+  'Change photo': 'Ganti foto',
+  'Remove photo': 'Hapus foto',
+  'Photo updated': 'Foto diperbarui',
+  'Photo removed': 'Foto dihapus',
+  'Could not use this image': 'Gambar tidak bisa dipakai',
+  'Photo is stored on this device only.': 'Foto hanya disimpan di perangkat ini.',
+  'subjects': 'pelajaran',
+  'assignments': 'tugas',
+  'duty': 'piket',
   // Activity logs
   'Filter by action prefix (e.g. auth., reminder.)': 'Filter berdasarkan awalan aksi (mis. auth., reminder.)',
   'No activity found': 'Aktivitas tidak ditemukan',

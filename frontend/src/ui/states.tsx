@@ -7,7 +7,10 @@ export function LoadingList({ rows = 4 }: { rows?: number }) {
   return (
     <div className="stack" aria-busy="true" aria-label={t('Loading')}>
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="skeleton" style={{ height: 64 }} />
+        <div key={i} className="skel-row" style={{ animationDelay: `${i * 0.08}s` }}>
+          <div className="skeleton skel-dot" />
+          <div className="skel-lines"><div className="skeleton" style={{ height: 14, width: '55%' }} /><div className="skeleton" style={{ height: 12, width: '80%' }} /></div>
+        </div>
       ))}
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Fab } from '../ui/controls';
+import { Avatar } from '../ui/Avatar';
 import { BrandMark } from '../ui/Brand';
 import { Icon, type IconName } from '../ui/Icon';
 import { MenuButton, MenuDivider, MenuItem } from '../ui/Menu';
@@ -78,7 +79,7 @@ function TopAppBar() {
           ))
         }
       </MenuButton>
-      <MenuButton label={t('Account')} trigger={<span className="avatar sm">{initial}</span>}>
+      <MenuButton label={t('Account')} trigger={<Avatar id={admin?.id} name={admin?.display_name ?? initial} size="sm" />}>
         {(close) => (
           <>
             <div className="menu-head">

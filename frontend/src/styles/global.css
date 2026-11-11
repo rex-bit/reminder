@@ -541,3 +541,24 @@ strong, b { font-weight: 600; }
   .seg { height: auto; min-height: 40px; }
   .seg button { height: auto; min-height: 40px; padding: 8px 6px; white-space: normal; line-height: 1.2; text-align: center; font-size: 13px; }
 }
+
+/* Profile photo */
+.avatar { overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-edit { position: relative; flex: none; }
+.avatar-edit .avatar { overflow: hidden; }
+.avatar-cam { position: absolute; right: -2px; bottom: -2px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--md-surface); background: var(--md-primary); color: var(--md-on-primary); display: grid; place-items: center; cursor: pointer; padding: 0; }
+
+/* Loading: staggered skeleton cards */
+.skeleton-card { height: 120px; border-radius: var(--r-lg); }
+.skeleton:nth-child(2) { animation-delay: .12s; } .skeleton:nth-child(3) { animation-delay: .24s; } .skeleton:nth-child(4) { animation-delay: .36s; }
+
+/* Templates cards */
+.tpl-card { display: flex; flex-direction: column; gap: 10px; }
+.tpl-card .tpl-head { display: flex; align-items: center; gap: 12px; }
+.tpl-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); flex: none; }
+.tpl-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.tpl-stat { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--md-surface-container-high); color: var(--md-on-surface-variant); }
+.skel-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--r-lg); border: 1px solid var(--md-outline-variant); animation: page-in .4s var(--ease-emph-dec) both; }
+.skel-dot { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+.skel-lines { flex: 1; display: grid; gap: 8px; }

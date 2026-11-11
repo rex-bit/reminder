@@ -1,9 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { errorMessage, setAccessToken } from '../api/client';
 import { adminsApi, authApi } from '../api/endpoints';
 import { useAuth } from '../auth/AuthProvider';
 import { fmtDateTime } from '../lib/format';
 import { Badge, Button, Card, TextField } from '../ui/controls';
+import { Icon } from '../ui/Icon';
+import { Avatar } from '../ui/Avatar';
+import { getAvatar, removeAvatar, setAvatarFromFile } from '../lib/avatar';
 import { useOverlay } from '../ui/overlay';
 import { t } from '../i18n';
 
@@ -21,7 +24,12 @@ export function ProfilePage() {
   const [changing, setChanging] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
 
+  const fileRef = useRef<HTMLInputElement>(null);
   if (!admin) return null;
+  async function pickPhoto(file?: File) {
+    if (!file || !admin) return;
+    try { await setAvatarFromFile(admin.id, file); notify(t('Photo updated')); } catch { notify(t('Could not use this image'), { kind: 'error' }); }
+  }
   const pwErrs = { next: next && next.length < 12 ? t('At least 12 characters') : undefined, confirm: confirm && confirm !== next ? t('Passwords do not match') : undefined };
 
   async function saveProfile(e: FormEvent) {
@@ -60,7 +68,13 @@ export function ProfilePage() {
   return (
     <div className="page">
       <div className="page-head">
-        <span className="avatar lg">{admin.display_name.charAt(0).toUpperCase()}</span>
+        <div className="avatar-edit">
+          <Avatar id={admin.id} name={admin.display_name} size="lg" />
+          <button type="button" className="avatar-cam" aria-label={t('Change photo')} onClick={() => fileRef.current?.click()}>
+            <Icon name="edit" size={16} />
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { void pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
+        </div>
         <div className="grow">
           <h1 className="headline-m">{admin.display_name}</h1>
           <div className="row" style={{ gap: 8 }}>
@@ -81,6 +95,11 @@ export function ProfilePage() {
             <TextField label={t('Display name')} value={name} onChange={(e) => setName(e.target.value)} />
             <TextField label={t('Email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <TextField label={t('Username')} value={admin.username} disabled readOnly />
+            <div className="row" style={{ gap: 8 }}>
+              <Button type="button" variant="tonal" icon="edit" onClick={() => fileRef.current?.click()}>{t('Change photo')}</Button>
+              {getAvatar(admin.id) && <Button type="button" variant="text" onClick={() => { removeAvatar(admin.id); notify(t('Photo removed')); }}>{t('Remove photo')}</Button>}
+            </div>
+            <p className="body-s muted">{t('Photo is stored on this device only.')}</p>
             <p className="body-s muted">{t('Last sign-in: {time}', { time: fmtDateTime(admin.last_login_at) })}</p>
             <div><Button type="submit" loading={saving} disabled={!name.trim() || !email}>{t('Save profile')}</Button></div>
           </form>
