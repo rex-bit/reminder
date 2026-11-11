@@ -37,3 +37,9 @@ jobs:
       - run: npm install --include=dev
       - run: npm run typecheck
       - run: npm run build
+      # Lets a reviewer open the built app (e.g. with a mocked API) to check the UI visually.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 3
