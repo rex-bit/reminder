@@ -26,6 +26,15 @@ function Guard({ perm, children }: { perm?: string; children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** True when opened from the home-screen icon (installed app) instead of a browser tab. */
+const isInstalledApp = (() => {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
+  } catch {
+    return false;
+  }
+})();
+
 export function App() {
   const { admin, loading } = useAuth();
   const loc = useLocation();
@@ -42,7 +51,7 @@ export function App() {
   if (!admin) {
     return (
       <Routes>
-        <Route path="/" element={<PublicHomePage />} />
+        <Route path="/" element={isInstalledApp ? <Navigate to="/login" replace /> : <PublicHomePage />} />
         <Route path="/home" element={<PublicHomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
