@@ -122,10 +122,10 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
                 const when = fmtDateTime(mode === 'scheduled' ? r.scheduled_at : r.sent_at ?? r.scheduled_at, r.timezone);
                 const go = () => nav(`/reminders/${r.id}`);
                 return (
-                  <SwipeRow key={r.id} tray={{(can('reminders.create') || can('reminders.delete')) ? (<>
+                  <SwipeRow key={r.id} tray={(can('reminders.create') || can('reminders.delete')) ? (<>
                       {can('reminders.create') && <button type="button" onClick={() => duplicate(r)}><Icon name="copy" size={20} />{t('Duplicate')}</button>}
                       {can('reminders.delete') && <button type="button" className="danger" onClick={() => remove(r)}><Icon name="delete" size={20} />{t('Delete')}</button>}
-                    </>) : null}}>
+                    </>) : null}>
                   <article className={`rcard s-${r.status}${emergency ? ' emergency' : ''}`} role="link" tabIndex={0} onClick={go} onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && go()}>
                     <span className="rcard-icon"><Icon name={emergency ? 'campaign' : STATUS_ICON[r.status]} /></span>
                     <div className="rcard-main">
