@@ -90,7 +90,7 @@ export function ReminderPreviewPage() {
         {can('reminders.send') && (r.status === 'draft' || r.status === 'pending') && (r.delivery_method === 'push' || r.recipient_ids.length > 0) && <Button icon="send" loading={busy === 'send'} onClick={sendNow}>{t('Send now')}</Button>}
         {can('reminders.send') && r.status === 'due' && <Button icon="check" loading={busy === 'mark'} onClick={async () => { if (await confirm({ title: t('Mark as sent?'), body: t('Confirm that you sent it on WhatsApp. This only records it.'), confirmLabel: t('Yes, I sent it') })) await act('mark', t('Marked as sent'), () => remindersApi.markSent(r.id)); }}>{t('Mark as sent')}</Button>}
         {can('reminders.send') && r.status === 'failed' && <Button icon="refresh" loading={busy === 'retry'} onClick={() => act('retry', t('Retry queued'), () => remindersApi.retryFailed(r.id))}>{t('Retry failed')}</Button>}
-        {can('reminders.create') && <Button variant="outlined" icon="copy" onClick={async () => { try { const c = await remindersApi.duplicate(r.id); notify(t('Duplicated as draft')); nav(`/reminders/${c.id}/edit`); } catch (e) { notify(errorMessage(e), { kind: 'error' }); } }}>{t('Duplicate')}</Button>}
+        {can('reminders.create') && <Button variant="outlined" icon="copy" onClick={async () => { try { const c = await remindersApi.duplicate(r.id); notify(t('Duplicated as draft')); nav(`/reminders/${c.id}/edit?dup=1`); } catch (e) { notify(errorMessage(e), { kind: 'error' }); } }}>{t('Duplicate')}</Button>}
         {can('reminders.delete') && <Button variant="text" danger icon="delete" onClick={remove}>{t('Delete')}</Button>}
       </div>
 

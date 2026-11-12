@@ -81,6 +81,7 @@ export function RecipientsPage() {
   const { can } = useAuth();
   const { notify, confirm } = useOverlay();
   const state = useAsync((s) => recipientsApi.list(s), []);
+  const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Recipient | 'new' | null>(null);
   const manage = can('recipients.manage');
 
@@ -102,7 +103,12 @@ export function RecipientsPage() {
         {manage && <Button icon="add" onClick={() => setEditing('new')}>{t('New recipient')}</Button>}
       </div>
       <AsyncView state={state} isEmpty={(d) => d.length === 0} empty={<EmptyState icon="send" title={t('No recipients')} hint={t('Add the numbers or groups that should receive reminders.')} action={manage ? <Button onClick={() => setEditing('new')}>{t('Add recipient')}</Button> : undefined} />}>
-        {(items) => (
+        {(all) => {
+          const items = all.filter((x) => `${x.name} ${x.phone_e164 ?? ''}`.toLowerCase().includes(q.trim().toLowerCase()));
+          return (
+          <>
+          {all.length > 5 && <TextField label={t('Search')} value={q} onChange={(e) => setQ(e.target.value)} />}
+          {items.length === 0 ? <p className="body-m muted">{t('No matching items')}</p> : (
           <div className="table-wrap">
             <table className="rt">
               <thead><tr><th>{t('Name')}</th><th>{t('Target')}</th><th>{t('Delivery')}</th><th>{t('Status')}</th><th aria-label={t('Actions')} /></tr></thead>
@@ -118,8 +124,10 @@ export function RecipientsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+          </div>)}
+          </>
+          );
+        }}
       </AsyncView>
       {editing && <RecipientDialog initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); state.reload(); }} />}
     </div>

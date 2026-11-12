@@ -4,12 +4,14 @@ import { errorMessage } from '../api/client';
 import { remindersApi } from '../api/endpoints';
 import type { Reminder, ReminderKind, ReminderStatus } from '../api/types';
 import { useAuth } from '../auth/AuthProvider';
+import { downloadCsv, fetchAllPages } from '../lib/csv';
 import { fmtDateTime, longDate } from '../lib/format';
 import { useAsync, useDebounced } from '../lib/useAsync';
 import { Badge, Button, FilterChip, IconButton, LinkButton, Segmented, TextField } from '../ui/controls';
 import { Icon, type IconName } from '../ui/Icon';
 import { useOverlay } from '../ui/overlay';
 import { AsyncView, EmptyState } from '../ui/states';
+import { SwipeRow } from '../ui/SwipeRow';
 import { ScheduleDialog } from './ScheduleDialog';
 import { t } from '../i18n';
 
@@ -53,6 +55,31 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
     }
   }
 
+  async function duplicate(r: Reminder) {
+    try {
+      const c = await remindersApi.duplicate(r.id);
+      notify(t('Duplicated as draft'));
+      nav(`/reminders/${c.id}/edit?dup=1`);
+    } catch (e) {
+      notify(errorMessage(e), { kind: 'error' });
+    }
+  }
+
+  const [exporting, setExporting] = useState(false);
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const all = await fetchAllPages((p) => remindersApi.list({ status: statuses, kind: kind === 'all' ? undefined : kind, q: dq, page: p, pageSize: 100, sort: mode === 'scheduled' ? 'scheduled_at' : '-updated_at' }));
+      downloadCsv(`reminder-${mode}-${new Date().toISOString().slice(0, 10)}.csv`, ['Judul', 'Jenis', 'Status', 'Tanggal reminder', 'Waktu kirim', 'Terkirim', 'Metode', 'Ulangi'],
+        all.map((r) => [r.title, r.kind, r.status, r.reminder_date, r.scheduled_at, r.sent_at, r.delivery_method, r.recurrence]));
+      notify(t('Exported {n} rows', { n: all.length }));
+    } catch (e) {
+      notify(errorMessage(e), { kind: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function cancel(r: Reminder) {
     if (await confirm({ title: t('Cancel scheduled reminder?'), body: t('“{title}” will not be sent. You can schedule it again later.', { title: r.title }), confirmLabel: t('Cancel reminder'), danger: true })) {
       await run(t('Reminder cancelled'), () => remindersApi.cancel(r.id));
@@ -68,6 +95,7 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
     <div className="page">
       <div className="page-head">
         <h1 className="headline-m">{cfg.title}</h1>
+        <Button variant="outlined" icon="share" loading={exporting} onClick={exportCsv}>{t('Export CSV')}</Button>
         {can('reminders.create') && <LinkButton to="/reminders/new" icon="add" className="hide-mobile">{t('New reminder')}</LinkButton>}
       </div>
 
@@ -94,7 +122,11 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
                 const when = fmtDateTime(mode === 'scheduled' ? r.scheduled_at : r.sent_at ?? r.scheduled_at, r.timezone);
                 const go = () => nav(`/reminders/${r.id}`);
                 return (
-                  <article key={r.id} className={`rcard s-${r.status}${emergency ? ' emergency' : ''}`} role="link" tabIndex={0} onClick={go} onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && go()}>
+                  <SwipeRow key={r.id} tray={{(can('reminders.create') || can('reminders.delete')) ? (<>
+                      {can('reminders.create') && <button type="button" onClick={() => duplicate(r)}><Icon name="copy" size={20} />{t('Duplicate')}</button>}
+                      {can('reminders.delete') && <button type="button" className="danger" onClick={() => remove(r)}><Icon name="delete" size={20} />{t('Delete')}</button>}
+                    </>) : null}}>
+                  <article className={`rcard s-${r.status}${emergency ? ' emergency' : ''}`} role="link" tabIndex={0} onClick={go} onKeyDown={(e) => e.target === e.currentTarget && e.key === 'Enter' && go()}>
                     <span className="rcard-icon"><Icon name={emergency ? 'campaign' : STATUS_ICON[r.status]} /></span>
                     <div className="rcard-main">
                       <span className="rcard-title">{r.title}</span>
@@ -113,10 +145,11 @@ export function ReminderListPage({ mode }: { mode: 'scheduled' | 'history' }) {
                       {can('schedule.manage') && (r.status === 'pending' || r.status === 'draft') && <IconButton icon="schedule" label={r.status === 'pending' ? t('Reschedule') : t('Schedule')} onClick={() => setEditing(r)} />}
                       {can('schedule.manage') && r.status === 'pending' && <IconButton icon="cancel" label={t('Cancel schedule')} onClick={() => cancel(r)} />}
                       {can('reminders.send') && r.status === 'failed' && <IconButton icon="refresh" label={t('Retry failed deliveries')} onClick={() => run(t('Retry queued'), () => remindersApi.retryFailed(r.id))} />}
-                      {can('reminders.create') && <IconButton icon="copy" label={t('Duplicate')} onClick={async () => { try { const c = await remindersApi.duplicate(r.id); notify(t('Duplicated as draft')); nav(`/reminders/${c.id}/edit`); } catch (e) { notify(errorMessage(e), { kind: 'error' }); } }} />}
-                      {can('reminders.delete') && <IconButton icon="delete" label={t('Delete')} onClick={() => remove(r)} />}
+                      {can('reminders.create') && <IconButton icon="copy" label={t('Duplicate')} onClick={() => duplicate(r)} className="swipe-dup" />}
+                      {can('reminders.delete') && <IconButton icon="delete" label={t('Delete')} onClick={() => remove(r)} className="swipe-del" />}
                     </div>
                   </article>
+                  </SwipeRow>
                 );
               })}
             </div>

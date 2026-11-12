@@ -37,6 +37,11 @@ export function useAsync<T>(fn: (signal: AbortSignal) => Promise<T>, deps: unkno
   }, [...deps, tick]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
+  useEffect(() => {
+    const h = () => setTick((t) => t + 1);
+    window.addEventListener('cr:refresh', h);
+    return () => window.removeEventListener('cr:refresh', h);
+  }, []);
   return { data, loading, error, reload };
 }
 

@@ -4,7 +4,10 @@ import { logsApi } from '../api/endpoints';
 import type { DeliveryStatus } from '../api/types';
 import { fmtDateTime } from '../lib/format';
 import { useAsync } from '../lib/useAsync';
-import { Badge, FilterChip } from '../ui/controls';
+import { downloadCsv, fetchAllPages } from '../lib/csv';
+import { errorMessage } from '../api/client';
+import { Badge, Button, FilterChip } from '../ui/controls';
+import { useOverlay } from '../ui/overlay';
 import { Pager } from '../ui/Pager';
 import { AsyncView, EmptyState } from '../ui/states';
 
@@ -14,10 +17,28 @@ export function DeliveryLogsPage() {
   const [status, setStatus] = useState<DeliveryStatus | null>(null);
   const [page, setPage] = useState(1);
   const state = useAsync((s) => logsApi.delivery({ status, page, pageSize: 25 }, s), [status, page]);
+  const { notify } = useOverlay();
+  const [exporting, setExporting] = useState(false);
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const all = await fetchAllPages((p) => logsApi.delivery({ status, page: p, pageSize: 100 }));
+      downloadCsv(`log-pengiriman-${new Date().toISOString().slice(0, 10)}.csv`, ['Reminder', 'Penerima', 'Status', 'Percobaan', 'Dibuat', 'Terkirim', 'Dibaca', 'Kode error', 'Error'],
+        all.map((l) => [l.reminder_title, l.recipient_name, l.status, l.attempt, l.created_at, l.sent_at, l.read_at, l.error_code, l.error_message]));
+      notify(t('Exported {n} rows', { n: all.length }));
+    } catch (e) {
+      notify(errorMessage(e), { kind: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="page">
-      <h1 className="headline-m">{t('Delivery logs')}</h1>
+      <div className="page-head">
+        <h1 className="headline-m">{t('Delivery logs')}</h1>
+        <Button variant="outlined" icon="share" loading={exporting} onClick={exportCsv}>{t('Export CSV')}</Button>
+      </div>
       <p className="body-m muted">{t('Statuses are recorded from the WhatsApp Cloud API responses and webhooks. Nothing here is simulated.')}</p>
       <div className="chips" role="group" aria-label={t('Status filter')}>
         {STATUSES.map((s) => <FilterChip key={s} selected={status === s} onClick={() => { setStatus(status === s ? null : s); setPage(1); }}>{s}</FilterChip>)}

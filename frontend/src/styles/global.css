@@ -630,3 +630,21 @@ strong, b { font-weight: 600; }
 .gtab.on svg { transform: scale(1.15); }
 .gnav.press .gtab.on svg { transform: scale(1.28); }
 .gtab:focus-visible { outline: 2px solid var(--md-primary); border-radius: 24px; }
+
+/* Pull to refresh */
+.ptr { position: fixed; top: 0; left: 50%; z-index: 70; pointer-events: none; }
+.ptr-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--md-surface-container-highest); box-shadow: 0 2px 10px rgba(0,0,0,.25); border: 3px solid var(--md-primary); border-top-color: transparent; }
+.ptr-dot.spin { animation: ptr-spin .7s linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@media (min-width: 600px) { .ptr { display: none; } }
+body { overscroll-behavior-y: contain; }
+
+/* Swipe actions (phones) */
+.swipe { position: relative; overflow: hidden; border-radius: var(--r-lg); }
+.swipe-tray { position: absolute; top: 0; right: 0; bottom: 0; display: flex; align-items: stretch; gap: 0; }
+.swipe-tray button { flex: 1; border: 0; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--md-on-secondary-container); background: var(--md-secondary-container); }
+.swipe-tray button.danger { background: var(--md-error); color: var(--md-on-error); }
+.swipe-body { position: relative; background: var(--md-surface); transition: transform .3s cubic-bezier(.3,1.2,.5,1); touch-action: pan-y; }
+.swipe-body.dragging { transition: none; }
+@media (min-width: 600px) { .swipe-tray { display: none; } .swipe-body { transform: none !important; } }
+@media (max-width: 599px) { .rcard-actions .swipe-dup, .rcard-actions .swipe-del { display: none; } }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Fab } from '../ui/controls';
+import { PullToRefresh } from '../ui/PullToRefresh';
 import { GlassNav } from './GlassNav';
 import { Avatar } from '../ui/Avatar';
 import { BrandMark } from '../ui/Brand';
@@ -132,6 +133,7 @@ export function Shell() {
         </div>
       )}
 
+      <PullToRefresh />
       <div className="gnav-host"><GlassNav bar={bar} rest={rest} moreOpen={more} onMore={() => setMore(true)} /></div>
 
       {more && (

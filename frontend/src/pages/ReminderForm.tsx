@@ -65,9 +65,10 @@ export function ReminderFormPage() {
   useEffect(() => {
     const r = existing.data;
     if (!r) return;
-    setTitle(r.title);
+    const dup = params.get('dup') === '1' && r.status === 'draft';
+    setTitle(dup ? r.title.replace(/^Copy of /, '') : r.title);
     setKind(r.kind);
-    setDate(r.reminder_date);
+    setDate(dup ? todayIso() : r.reminder_date);
     setContent({ ...EMPTY_CONTENT, ...r.content });
     setCustom(r.custom_message);
     setTemplateId(r.template_id ?? '');
@@ -76,6 +77,7 @@ export function ReminderFormPage() {
     setUntil(r.recurrence_until ?? '');
     setMethod(r.delivery_method ?? 'both');
     setRids(r.recipient_ids);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   // New reminders start from the configured timezone.

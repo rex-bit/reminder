@@ -12,6 +12,10 @@ export const idManage: Record<string, string> = {
   'Adjust photo': 'Atur foto',
   'Zoom': 'Zoom',
   'Drag the photo to reposition it.': 'Geser foto untuk mengatur posisi.',
+  'Export CSV': 'Ekspor CSV',
+  'Exported {n} rows': '{n} baris diekspor',
+  'Search': 'Cari',
+  'No matching items': 'Tidak ada yang cocok',
   // Activity logs
   'Filter by action prefix (e.g. auth., reminder.)': 'Filter berdasarkan awalan aksi (mis. auth., reminder.)',
   'No activity found': 'Aktivitas tidak ditemukan',

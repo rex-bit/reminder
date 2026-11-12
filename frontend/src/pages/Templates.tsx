@@ -52,6 +52,7 @@ export function TemplatesPage() {
   const { notify, confirm } = useOverlay();
   const state = useAsync((s) => templatesApi.list(s), []);
   const [editing, setEditing] = useState<Template | 'new' | null>(null);
+  const [q, setQ] = useState('');
   const manage = can('templates.manage');
 
   async function remove(tpl: Template) {
@@ -72,7 +73,12 @@ export function TemplatesPage() {
         {manage && <Button icon="add" onClick={() => setEditing('new')}>{t('New template')}</Button>}
       </div>
       <AsyncView state={state} isEmpty={(d) => d.length === 0} empty={<EmptyState icon="template" title={t('No templates yet')} hint={t('Templates pre-fill reminders with a standard schedule or layout.')} action={manage ? <Button onClick={() => setEditing('new')}>{t('Create template')}</Button> : undefined} />}>
-        {(items) => (
+        {(all) => {
+          const items = all.filter((x) => `${x.name} ${x.description ?? ''}`.toLowerCase().includes(q.trim().toLowerCase()));
+          return (
+          <>
+          {all.length > 3 && <TextField label={t('Search')} value={q} onChange={(e) => setQ(e.target.value)} />}
+          {items.length === 0 ? <p className="body-m muted">{t('No matching items')}</p> : (
           <div className="grid cols-auto">
             {items.map((tpl) => (
               <Card key={tpl.id} variant="outlined" className="tpl-card">
@@ -94,8 +100,10 @@ export function TemplatesPage() {
                 )}
               </Card>
             ))}
-          </div>
-        )}
+          </div>)}
+          </>
+          );
+        }}
       </AsyncView>
       {editing && <TemplateDialog initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); state.reload(); }} />}
     </div>
