@@ -11,6 +11,7 @@ import { useAsync } from '../lib/useAsync';
 import { SEED_PRESETS } from '../theme/palette';
 import { useTheme, type ThemeMode } from '../theme/ThemeProvider';
 import { BrandMark } from '../ui/Brand';
+import { InfoLinks } from '../ui/InfoPage';
 import { IconButton, LinkButton, Segmented, Switch } from '../ui/controls';
 import { BottomSheet, useOverlay } from '../ui/overlay';
 import { EmptyState, ErrorState, LoadingList } from '../ui/states';
@@ -328,7 +329,8 @@ export function PublicHomePage() {
         )}
 
         {feed.error && d && <div className="banner error">{feed.error}</div>}
-        <p className="body-s muted" style={{ textAlign: 'center' }}>Halaman ini hanya untuk dibaca. · <a href="/privacy">Privasi</a></p>
+        <p className="body-s muted" style={{ textAlign: 'center' }}>Halaman ini hanya untuk dibaca.</p>
+        <InfoLinks className="center" />
       </main>
       {look && <AppearanceSheet onClose={() => setLook(false)} />}
     </div>

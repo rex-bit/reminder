@@ -9,6 +9,10 @@ import { DuePage } from './pages/Due';
 import { DeliveryLogsPage } from './pages/DeliveryLogs';
 import { LoginPage } from './pages/Login';
 import { NoAccessPage } from './pages/NoAccess';
+import { AboutPage } from './pages/About';
+import { ChangelogPage } from './pages/Changelog';
+import { RoadmapPage } from './pages/Roadmap';
+import { TermsPage } from './pages/Terms';
 import { PrivacyPage } from './pages/Privacy';
 import { ProfilePage } from './pages/Profile';
 import { PublicHomePage } from './pages/PublicHome';
@@ -46,6 +50,10 @@ export function App() {
         <Route path="/home" element={<PublicHomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/changelog" element={<ChangelogPage />} />
+        <Route path="/roadmap" element={<RoadmapPage />} />
         <Route path="*" element={<NoAccessPage />} />
       </Routes>
     );
@@ -57,6 +65,10 @@ export function App() {
     <Routes>
       <Route path="home" element={<PublicHomePage />} />
       <Route path="privacy" element={<PrivacyPage />} />
+      <Route path="terms" element={<TermsPage />} />
+      <Route path="about" element={<AboutPage />} />
+      <Route path="changelog" element={<ChangelogPage />} />
+      <Route path="roadmap" element={<RoadmapPage />} />
       <Route path="login" element={<Navigate to="/" replace />} />
       <Route element={<Shell />}>
         <Route index element={<Guard perm="reminders.read"><DashboardPage /></Guard>} />

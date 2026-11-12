@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Fab } from '../ui/controls';
 import { PullToRefresh } from '../ui/PullToRefresh';
+import { InfoLinks } from '../ui/InfoPage';
 import { GlassNav } from './GlassNav';
 import { Avatar } from '../ui/Avatar';
 import { BrandMark } from '../ui/Brand';
@@ -146,6 +147,7 @@ export function Shell() {
               </NavLink>
             ))}
           </div>
+          <InfoLinks className="in-sheet" />
         </BottomSheet>
       )}
     </div>
