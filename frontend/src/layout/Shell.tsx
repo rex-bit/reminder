@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Fab } from '../ui/controls';
+import { GlassNav } from './GlassNav';
 import { Avatar } from '../ui/Avatar';
 import { BrandMark } from '../ui/Brand';
 import { Icon, type IconName } from '../ui/Icon';
@@ -131,19 +132,7 @@ export function Shell() {
         </div>
       )}
 
-      <nav className="nav-bar" aria-label={t('Main')}>
-        {bar.map((i) => (
-          <NavItem key={i.to} item={i} />
-        ))}
-        {rest.length > 0 && (
-          <button className="nav-item" onClick={() => setMore(true)} aria-haspopup="dialog">
-            <span className="nav-pill">
-              <Icon name="more" />
-            </span>
-            <span className="label-m">{t('More')}</span>
-          </button>
-        )}
-      </nav>
+      <div className="gnav-host"><GlassNav bar={bar} rest={rest} moreOpen={more} onMore={() => setMore(true)} /></div>
 
       {more && (
         <BottomSheet title={admin?.display_name ?? t('More')} onClose={() => setMore(false)}>
