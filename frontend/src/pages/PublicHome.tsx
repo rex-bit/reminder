@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { errorMessage } from '../api/client';
 import { publicApi } from '../api/endpoints';
 import { EMPTY_CONTENT, type PublicReminder, type ReminderContent } from '../api/types';
@@ -221,6 +222,14 @@ function NotificationsCard() {
 
 export function PublicHomePage() {
   const { admin } = useAuth();
+  const nav = useNavigate();
+  // Hidden entrance to the sign-in page: tap the logo 5 times within 3 seconds. No visible login button.
+  const taps = useRef<number[]>([]);
+  const secretTap = () => {
+    const now = Date.now();
+    taps.current = [...taps.current.filter((x) => now - x < 3000), now];
+    if (taps.current.length >= 5) { taps.current = []; nav(admin ? '/' : '/login'); }
+  };
   const feed = useAsync((s) => publicApi.feed(s), []);
   const { reload } = feed;
   const [tab, setTab] = useState<Tab>('today');
@@ -260,7 +269,7 @@ export function PublicHomePage() {
   return (
     <div className="pubhome">
       <header className="appbar">
-        <BrandMark size={36} />
+        <span onClick={secretTap} style={{ display: 'inline-flex', userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}><BrandMark size={36} /></span>
         <h1 className="title-l grow">Info Kelas</h1>
         <IconButton icon="refresh" label="Muat ulang" onClick={reload} />
         <IconButton icon="settings" label="Tampilan & warna" onClick={() => setLook(true)} />
